@@ -515,7 +515,7 @@ local env = make_env(
 	function(rule_name, opts) ninja:add_build(rule_name, opts) end
 )
 
-local config_deps = { env.S(buildfile), arg0 }
+local config_deps = { env.S(buildfile), PATH.isabs(arg0) and arg0 or env.S(arg0) }
 
 -- Run build configuration script
 local chunk, err = loadfile(buildfile, 'bt', env)
