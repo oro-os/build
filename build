@@ -320,13 +320,19 @@ end
 
 local function make_rule_factory(on_rule, on_entry)
 	local function Rule(rule_opts)
+		assert(type(rule_opts) == 'table', 'rule options must be a table')
 		assert(rule_opts.name ~= nil, 'Rule() options must include `name` field')
 		assert(rule_opts.command ~= nil, 'Rule() options must include `command` field')
 
 		on_rule(rule_opts)
 
 		return function(entry_opts)
+			assert(type(entry_opts) == 'table', 'build options must be a table')
+			assert(entry_opts.out ~= nil, 'build options must include `out` field')
+
 			on_entry(rule_opts.name, entry_opts)
+
+			return entry_opts.out
 		end
 	end
 
