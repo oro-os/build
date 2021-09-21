@@ -1,0 +1,503 @@
+#!/usr/bin/env lua
+--  __   __   __
+-- /  \ |__) /  \
+-- \__/ |  \ \__/
+--
+-- ORO BUILD GENERATOR
+-- Copyright (c) 2021, Josh Junon
+-- License TBD
+--
+
+-- Set the locale for the entire program
+os.setlocale('C', 'all')
+
+require 'debug'
+require 'io'
+require 'os'
+require 'table'
+
+-- TODO fail on Windows
+
+-- Forward declare metatables
+local Ninja = {}
+local Path = {}
+
+-- Third-party dependency inclusion
+-- TODO inline third-party dep(s) and omit the instructions entirely
+-- TODO (this will require also inlining lua, and then compiling it,
+-- TODO of course - goal is that the build system can bootstrap itself
+-- TODO entirely, without any external deps except a C compiler)
+local function dep_require(name, pkg_name)
+	pkg_name = pkg_name or name
+
+	return (function(res, ...)
+		if res then
+			return ...
+		else
+			error(
+				'Oro build generator requires the `'
+				.. name
+				.. '` dependency. Try `luarocks install '
+				.. pkg_name
+				.. '` and run the build again.\n\n'
+				.. tostring(select(1, ...))
+			)
+		end
+	end)(pcall(require, name))
+end
+
+local PATH = dep_require('path', 'lua-path')
+
+-- Utilities
+local unpack = table.unpack or unpack or error('no unpack!')
+
+local function isinstance(v, meta)
+	local mt = getmetatable(v)
+	return mt ~= nil and mt.__index == meta
+end
+
+local function Set(list)
+	local d = {}
+	for _, v in ipairs(list) do d[v] = true end
+	return d
+end
+
+local function flat(t)
+	local stack = {{t, 1}}
+
+	local function iter(i)
+		local v = i[1][i[2]]
+		i[2] = i[2] + 1
+		return v
+	end
+
+	return function()
+		local v = stack[#stack]
+		if v == nil then return end
+		v = iter(v)
+
+		while v == nil do
+			stack[#stack] = nil
+			v = stack[#stack]
+			if v == nil then return nil end
+			v = iter(v)
+		end
+
+		while type(v) == 'table' do
+			-- Special handling for Path objects
+			if isinstance(v, Path) then
+				break
+			end
+
+			itr = {v, 1}
+			local nv = iter(itr)
+			if nv ~= nil then
+				stack[#stack + 1] = itr
+				v = nv
+			end
+		end
+
+		return v
+	end
+end
+
+local ninja_rule_keys = Set {
+	'name', -- NOTE: *not* a real Ninja key; it's ignored by the emitter.
+	'command', 'depfile', 'deps', 'msvc_deps_prefix',
+	'description', 'dyndep', 'generator', 'in',
+	'in_newline', 'out', 'restat', 'rspfile',
+	'rspfile_content'
+}
+
+function Ninja:write(to_stream)
+	to_stream:write('#\n# THIS IS A GENERATED BUILD CONFIGURATION\n')
+	to_stream:write('# DO NOT MANUALLY EDIT!\n#')
+
+	-- NOTE: this emits the initial ' ' if a value is found.
+	local function escape(v, colon)
+		-- re-assign here to ignore second returned value
+		v = v:gsub(colon and '[ \n:]' or '[ \n]', '$%0')
+		return v
+	end
+
+	local function emit(v)
+		if type(v) == 'table' then
+			for v in flat(v) do
+				to_stream:write(' ')
+				to_stream:write(escape(tostring(v)))
+			end
+		elseif v ~= nil then
+			to_stream:write(' ')
+			to_stream:write(tostring(v))
+		end
+	end
+
+	for name, opts in pairs(self.rules) do
+		-- sanity checks
+		assert(opts.command ~= nil)
+
+		-- emit
+		to_stream:write('\n\nrule ')
+		to_stream:write(tostring(name))
+
+		for opt_name, opt_val in pairs(opts) do
+			-- special case: 'name' is not a real
+			-- ninja key but is used internally
+			-- to create a cleaner API.
+			if opt_name ~= 'name' then
+				to_stream:write('\n  ')
+				to_stream:write(tostring(opt_name))
+				to_stream:write(' =')
+				emit(opt_val)
+			end
+		end
+	end
+
+	for _, build_def in ipairs(self.builds) do
+		local rule_name, opts = build_def.rule, build_def.opts
+
+		-- sanity checks
+		assert(rule_name ~= nil)
+		assert(opts ~= nil)
+		assert(type(opts.out) == 'table')
+		assert(#(opts.out) > 0)
+
+		-- emit
+		-- TODO enforce that build-line paths are Path objects.
+		to_stream:write('\n\nbuild')
+		local ignore_keys = {}
+
+		for v in flat(opts.out) do
+			ignore_keys.out = true
+
+			to_stream:write(' ')
+			to_stream:write(escape(tostring(v), true))
+		end
+
+		if type(opts.out_implicit) == 'table' then
+			ignore_keys.out_implicit = true
+
+			to_stream:write(' |')
+			for v in flat(opts.out_implicit) do
+				to_stream:write(' ')
+				to_stream:write(escape(tostring(v), true))
+			end
+		end
+
+		to_stream:write(': ')
+		to_stream:write(tostring(rule_name))
+
+		if type(opts['in']) == 'table' then
+			ignore_keys['in'] = true
+
+			for v in flat(opts['in']) do
+				to_stream:write(' ')
+				to_stream:write(escape(tostring(v), true))
+			end
+		end
+
+		if type(opts.in_implicit) == 'table' then
+			ignore_keys.in_implicit = true
+
+			to_stream:write(' |')
+			for v in flat(opts.in_implicit) do
+				to_stream:write(' ')
+				to_stream:write(escape(tostring(v), true))
+			end
+		end
+
+		if type(opts.in_order) == 'table' then
+			ignore_keys.in_order = true
+
+			to_stream:write(' ||')
+			for v in flat(opts.in_order) do
+				to_stream:write(' ')
+				to_stream:write(escape(tostring(v), true))
+			end
+		end
+
+		for k, v in pairs(opts) do
+			if not ignore_keys[k] then
+				to_stream:write('\n  ')
+				to_stream:write(k)
+				to_stream:write(' =')
+				emit(v)
+			end
+		end
+	end
+
+	to_stream:write('\n\n# END OF BUILD SCRIPT\n')
+end
+
+function Ninja:add_rule(opts)
+	assert(opts.name ~= nil, 'Ninja:add_rule() options must include `name` field')
+	assert(opts.command ~= nil, 'Ninja:add_rule() options must include `command` field')
+	assert(self.rules[opts.name] == nil, 'duplicate rule registered: ' .. opts.name)
+
+	self.rules[opts.name] = opts
+
+	for k, _ in pairs(opts) do
+		assert(ninja_rule_keys[k], 'invalid Ninja rule option name: '..k)
+	end
+
+	return self
+end
+
+function Ninja:add_build(rule_name, opts)
+	-- convert 'In' to 'in'
+	-- this is a convenience since `in` is a keyword in
+	-- lua and thus cannot be used as a key in a literal
+	-- table.
+	if opts.In ~= nil then
+		assert(opts['in'] == nil, 'cannot specify both `In` and `in`')
+		opts['in'] = opts.In
+		opts.In = nil
+	end
+
+	local function sanitize_key(k)
+		local v = opts[k]
+
+		if v == nil then return end
+
+		if isinstance(v, Path) then
+			v = tostring(v)
+		end
+
+		if type(v) == 'string' then
+			v = {v}
+		end
+
+		assert(type(v) == 'table')
+
+		local t, i = {}, 1
+		for nv in flat(v) do
+			t[i] = tostring(nv)
+			i = i + 1
+		end
+
+		opts[k] = t
+	end
+
+	if opts then
+		sanitize_key('out')
+		sanitize_key('out_implicit')
+		sanitize_key('in')
+		sanitize_key('in_implicit')
+		sanitize_key('in_order')
+	end
+
+	assert(self.rules[rule_name] ~= nil, 'unknown rule: ' .. rule_name)
+	assert(type(opts.out) == 'table', 'missing required option `out`, or it is not a table')
+	assert(#(opts.out) > 0, 'must specify at least one `out` path (got empty table instead)')
+
+	table.insert(self.builds, {rule=rule_name, opts=opts})
+
+	return self
+end
+
+local function Ninjafile()
+	local ninja = {
+		rules = {},
+		builds = {}
+	}
+
+	return setmetatable(ninja, {__index = Ninja})
+end
+
+local function oro_print(...)
+	local info = debug.getinfo(2, 'S')
+	local source = info.source:sub(2)
+	io.stderr:write('-- ')
+	io.stderr:write(source)
+	io.stderr:write(':')
+	for i = 1, select('#', ...) do
+		local x = select(i, ...)
+		io.stderr:write(' ')
+		io.stderr:write(tostring(x))
+	end
+	io.stderr:write('\n')
+end
+
+local function make_rule_factory(on_rule, on_entry)
+	local function Rule(rule_opts)
+		assert(rule_opts.name ~= nil, 'Rule() options must include `name` field')
+		assert(rule_opts.command ~= nil, 'Rule() options must include `command` field')
+
+		on_rule(rule_opts)
+
+		return function(entry_opts)
+			on_entry(rule_opts.name, entry_opts)
+		end
+	end
+
+	return Rule
+end
+
+function Path:__tostring()
+	local path, base = self._path, self._base
+
+	if #base == 0 then return path end
+
+	return PATH.normalize(
+		(PATH.has_dir_end(path) and PATH.ensure_dir_end or PATH.remove_dir_end)(
+			PATH.join(base, path)
+		)
+	)
+end
+
+local function make_path_factory(from, retarget_to)
+	assert(PATH.isabs(from))
+	assert(PATH.isabs(retarget_to))
+
+	-- strip common prefix
+	local from_root, retg_root = nil, nil
+	while #from > 0 and #retarget_to > 0 do
+		-- yes, PATH.join('/', '/foo') results in '/foo'.
+		from_root, from = PATH.splitroot(PATH.join('/', from))
+		retg_root, retarget_to = PATH.splitroot(PATH.join('/', retarget_to))
+
+		if from_root ~= retg_root then
+			break
+		end
+	end
+
+	-- Re-write difference in path depth with `..`'s.
+	local joins = {}
+	while #from > 0 do
+		from_root, from = PATH.splitroot(PATH.join('/', from))
+		joins[#joins + 1] = '..'
+	end
+
+	-- Construct the new base path
+	local base = PATH.remove_dir_end(PATH.join(unpack(joins) or '', retarget_to))
+
+	return function(path)
+		-- Translate `S'/foo'` to `S'./foo'`
+		if PATH.isabs(path) then
+			-- this is a bit magic, sorry.
+			-- basically, the lua-path function `splitroot`
+			-- splits a path by
+			path = (PATH.has_dir_end(path) and PATH.ensure_dir_end or PATH.remove_dir_end)(
+				PATH.join(PATH.splitroot(path))
+			)
+		end
+
+		return setmetatable(
+			{
+				_path = path,
+				_base = base,
+			},
+			{
+				__index = Path,
+				__tostring = Path.__tostring
+			}
+		)
+	end
+end
+
+local function make_env(source_dir, build_dir, on_rule, on_entry)
+	assert(PATH.isabs(source_dir))
+	assert(PATH.isabs(build_dir))
+
+	local env = {}
+
+	env.assert = assert
+	env.ipairs = ipairs
+	env.pairs = pairs
+	env.error = error
+	env.getmetatable = getmetatable
+	env.setmetatable = setmetatable
+	env.next = next
+	env.pcall = pcall
+	env.xpcall = xpcall
+	env.rawequal = rawequal
+	env.rawset = rawset
+	env.rawget = rawget
+	env.select = select
+	env.tonumber = tonumber
+	env.tostring = tostring
+	env.type = type
+
+	env.print = oro_print
+	env.Rule = make_rule_factory(on_rule, on_entry)
+	env.S = make_path_factory(build_dir, source_dir)
+	env.O = make_path_factory(build_dir, build_dir)
+
+	return env
+end
+
+-- Validate arguments
+local arg0 = arg[0]
+local buildfile = arg[1]
+local build_dir = arg[2]
+
+assert(#arg == 2, 'usage: '..(arg[1] or './build')..' <build_dir>')
+assert(#arg0 > 0, 'arg0 is empty; cowardly refusing to continue')
+assert(buildfile ~= nil and #buildfile > 0, 'no buildfile specified (or empty string given)')
+
+-- Create/validate build directory
+if not PATH.mkdir(build_dir) then
+	error('failed to create build directory: '..err..': '..build_dir)
+end
+
+-- Get the directory to the Oro common root
+local common_root = PATH.dirname(arg0)
+
+-- Set up the package search path
+local search_path_base =  common_root .. 'oro-build'
+package.path = (
+	package.path
+	.. ';/usr/local/lib;/usr/lib'
+	.. ';' .. search_path_base .. '/?.lua'
+	.. ';' .. search_path_base .. '/?/_.lua'
+)
+
+-- Initialize build script environment
+print('(Re-)configuring project...')
+
+local ninja = Ninjafile()
+
+local env = make_env(
+	PATH.dirname(PATH.abspath(buildfile)),
+	PATH.abspath(build_dir),
+	function(opts) ninja:add_rule(opts) end,
+	function(rule_name, opts) ninja:add_build(rule_name, opts) end
+)
+
+local config_deps = { env.S(buildfile), arg0 }
+
+-- Run build configuration script
+local chunk, err = loadfile(buildfile, 'bt', env)
+assert(chunk ~= nil, err)
+chunk()
+
+-- Add default generation rule (so that any config files
+-- are checked in order to re-config)
+local ninja_out = build_dir .. '/build.ninja'
+
+ninja:add_rule {
+	name = '_oro_build_regenerator',
+	command = { 'cd', PATH.currentdir(), '&&', 'env', '_ORO_BUILD_REGEN=1', arg },
+	description = { 'Reconfigure', build_dir },
+	generator = '1'
+}
+
+ninja:add_build('_oro_build_regenerator', {
+	out = env.O'build.ninja',
+	In = config_deps
+})
+
+-- Dump Ninja file to build directory
+local ostream = io.open(ninja_out, 'wb')
+ninja:write(ostream)
+ostream:close()
+
+-- Done!
+print('\nOK, configured: ' .. PATH.abspath(build_dir))
+print()
+
+if os.getenv('_ORO_BUILD_REGEN') == nil then
+	print('You may now run `ninja` in that directory to build.')
+end
+
+-- vim: set syntax=lua:
