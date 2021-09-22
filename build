@@ -62,6 +62,26 @@ local function Set(list)
 	return d
 end
 
+local function List(list)
+	-- copy for posterity
+	local t = {}
+
+	for i,v in ipairs(list) do
+		t[i] = v
+	end
+
+	return setmetatable(t, {
+		__newindex = function(self, k, v)
+			if k == nil then
+				k = #self + 1
+			end
+			assert(type(k) == 'number', 'key must be a number')
+			assert(k == #self + 1, 'cannot set out-of-bounds index')
+			rawset(self, k, v)
+		end
+	})
+end
+
 local function flat(t)
 	local stack = {{t, 1}}
 
@@ -452,6 +472,7 @@ local function make_env(source_dir, build_dir, on_rule, on_entry)
 
 	local env = {}
 
+	-- Lua builtins
 	env.assert = assert
 	env.ipairs = ipairs
 	env.pairs = pairs
@@ -469,10 +490,19 @@ local function make_env(source_dir, build_dir, on_rule, on_entry)
 	env.tostring = tostring
 	env.type = type
 
-	env.print = oro_print
+	-- Lua libraries (be careful with which are whitelisted)
+	env.table = table
+	env.string = string
+
+	-- Build-related functions
 	env.Rule = make_rule_factory(on_rule, on_entry)
 	env.S = make_path_factory(build_dir, source_dir)
 	env.O = make_path_factory(build_dir, build_dir)
+
+	-- Extra utilities
+	env.print = oro_print
+	env.Set = Set
+	env.List = List
 
 	return env
 end
