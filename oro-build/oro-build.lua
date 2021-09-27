@@ -7,6 +7,8 @@
 -- License TBD
 --
 
+-- The `Oro` table is the set of utilities coming from
+-- the C runtime (oro-build.c).
 if type(_G.Oro) ~= 'table' then
 	error '`Oro` not defined; do not call oro-build.lua directly!'
 end

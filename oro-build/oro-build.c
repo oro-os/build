@@ -9,6 +9,7 @@
 #include <stdio.h>
 
 static int display_traceback(lua_State *L) {
+	/* -, +1 */
 	lua_getglobal(L, "debug");
 	lua_getfield(L, -1, "traceback");
 	lua_pushvalue(L, 1);
