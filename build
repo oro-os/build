@@ -338,11 +338,17 @@ local function oro_print(...)
 	io.stderr:write('\n')
 end
 
+local anonymous_rule_cursor = 1
+
 local function make_rule_factory(on_rule, on_entry)
 	local function Rule(rule_opts)
 		assert(type(rule_opts) == 'table', 'rule options must be a table')
-		assert(rule_opts.name ~= nil, 'Rule() options must include `name` field')
 		assert(rule_opts.command ~= nil, 'Rule() options must include `command` field')
+
+		if rule_opts.name == nil then
+			rule_opts.name = '_R_' .. tostring(anonymous_rule_cursor)
+			anonymous_rule_cursor = anonymous_rule_cursor + 1
+		end
 
 		on_rule(rule_opts)
 
