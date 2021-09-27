@@ -16,18 +16,18 @@ end
 -- Set the locale for the entire program
 os.setlocale('C', 'all')
 
--- Set the require() search path
-package.path = (
-	Oro.root_dir .. '/ext/lua-path/lua/?.lua'
-	.. ';' .. Oro.root_dir .. '/lib/?.lua'
-	.. ';' .. Oro.root_dir .. '/lib/?/_.lua'
-	.. ';' .. package.path
-)
-
 -- Pre-load 'lfs' and load 'lua-path'
+package.path = Oro.root_dir .. '/ext/lua-path/lua/?.lua'
 package.loaded.lfs = Oro.lfs
 require('path.fs') -- (just asserts that 'lfs' is loaded properly)
 Oro.path = (require 'path').new('/')
+
+-- Re-set the inclusion path to the Oro build library
+-- as well as the source path.
+package.path = (
+	Oro.root_dir .. '/lib/?.lua'
+	.. ';' .. Oro.root_dir .. '/lib/?/_.lua'
+)
 
 -- Forward declare metatables
 local Ninja = {}
