@@ -328,7 +328,12 @@ local function Ninjafile()
 	return setmetatable(ninja, {__index = Ninja})
 end
 
+local had_config_output = false
+
 local function oro_print(...)
+	if not had_config_output then io.stderr:write('\n') end
+	had_config_output = true
+
 	local info = debug.getinfo(2, 'S')
 	local source = info.source:sub(2)
 	io.stderr:write('-- ')
@@ -532,7 +537,7 @@ local function make_env(source_dir, build_dir, on_rule, on_entry)
 end
 
 -- Initialize build script environment
-print('(Re-)configuring project...\n')
+io.stderr:write('(Re-)configuring project...\n')
 
 local ninja = Ninjafile()
 
@@ -582,9 +587,8 @@ ninja:write(ostream)
 ostream:close()
 
 -- Done!
-print('\nOK, configured: ' .. Oro.path.abspath(Oro.bin_dir))
-print()
-
+if had_config_output then io.stderr:write('\n') end
+io.stderr:write('OK, configured: ' .. Oro.path.abspath(Oro.bin_dir) .. '\n')
 if os.getenv('_ORO_BUILD_REGEN') == nil then
-	print('You may now run `ninja` in that directory to build.')
+	io.stderr:write('You should now run: ninja -C \''..Oro.bin_dir..'\'\n')
 end
