@@ -433,7 +433,7 @@ local function make_path_factory(from, retarget_to)
 	-- Construct the new base path
 	local base = Oro.path.remove_dir_end(Oro.path.join(unpack(joins) or '', retarget_to))
 
-	return function(path)
+	local inner = function(path)
 		-- Translate `S'/foo'` to `S'./foo'`
 		if Oro.path.isabs(path) then
 			-- this is a bit magic, sorry.
@@ -454,6 +454,20 @@ local function make_path_factory(from, retarget_to)
 				__tostring = Path.__tostring
 			}
 		)
+	end
+
+	return function(path)
+		if type(path) == 'string' or isinstance(path, Path) then
+			return inner(path)
+		elseif type(path) == 'table' then
+			local nt = {}
+			for i = 1, #path do
+				nt[i] = inner(path[i])
+			end
+			return nt;
+		else
+			error('invalid path type: '..tostring(type(path)))
+		end
 	end
 end
 
