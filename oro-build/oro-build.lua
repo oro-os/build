@@ -231,6 +231,15 @@ function Ninja:write(to_stream)
 		end
 	end
 
+	if #self.defaults > 0 then
+		to_stream:write('\n')
+
+		for _, def_output in ipairs(self.defaults) do
+			to_stream:write('\ndefault ')
+			to_stream:write(escape(tostring(def_output)))
+		end
+	end
+
 	to_stream:write('\n\n# END OF BUILD SCRIPT\n')
 end
 
@@ -300,10 +309,20 @@ function Ninja:add_build(rule_name, opts)
 	return self
 end
 
+function Ninja:add_default(output)
+	self.defaults[#self.defaults + 1] = output
+	return output
+end
+
+function Ninja:has_defaults()
+	return #self.defaults > 0
+end
+
 local function Ninjafile()
 	local ninja = {
 		rules = {},
-		builds = {}
+		builds = {},
+		defaults = {}
 	}
 
 	return setmetatable(ninja, {__index = Ninja})
@@ -532,7 +551,14 @@ local config_deps = {
 -- Run build configuration script
 local chunk, err = loadfile(Oro.build_script, 'bt', env)
 assert(chunk ~= nil, err)
-chunk()
+
+for output in flat{chunk()} do
+	ninja:add_default(output)
+end
+
+if not ninja:has_defaults() then
+	error 'no default rules returned from build script; did you forget to `return`?'
+end
 
 -- Add default generation rule (so that any config files
 -- are checked in order to re-config)
@@ -546,7 +572,7 @@ ninja:add_rule {
 }
 
 ninja:add_build('_oro_build_regenerator', {
-	out = env.B'build.ninja',
+	out = ninja:add_default(env.B'build.ninja'),
 	In = config_deps
 })
 
