@@ -1,0 +1,9 @@
+[submodule "oro-build/ext/lua"]
+	path = oro-build/ext/lua
+	url = https://github.com/lua/lua.git
+[submodule "oro-build/ext/luafilesystem"]
+	path = oro-build/ext/luafilesystem
+	url = https://github.com/keplerproject/luafilesystem.git
+[submodule "oro-build/ext/lua-path"]
+	path = oro-build/ext/lua-path
+	url = https://github.com/moteus/lua-path.git
