@@ -1,3 +1,6 @@
+#include "./ext/lua/onelua.c"
+#include "./ext/luafilesystem/src/lfs.c"
+
 #include "./ext/lua/lua.h"
 #include "./ext/lua/lualib.h"
 #include "./ext/lua/lauxlib.h"
