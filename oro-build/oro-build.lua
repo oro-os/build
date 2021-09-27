@@ -25,8 +25,7 @@ package.path = (
 )
 
 -- Pre-load 'lfs' and load 'lua-path'
-package.loaded.lfs = lfs
-_G.lfs = nil
+package.loaded.lfs = Oro.lfs
 require('path.fs') -- (just asserts that 'lfs' is loaded properly)
 Oro.path = (require 'path').new('/')
 

@@ -56,12 +56,6 @@ int main(int argc, char *argv[]) {
 	lua_pushcfunction(L, &display_traceback);
 	traceback_idx = lua_gettop(L);
 
-	lua_pushcfunction(L, &luaopen_lfs);
-	if (lua_pcall(L, 0, 0, traceback_idx) != 0) {
-		fprintf(stderr, "error: failed to load LFS: %s\n", lua_tostring(L, -1));
-		goto exit_close_state;
-	}
-
 	lua_newtable(L);
 	{
 		{
@@ -78,6 +72,19 @@ int main(int argc, char *argv[]) {
 			lua_pushstring(L, "build_script");
 			lua_pushstring(L, build_script);
 			lua_rawset(L, -3);
+		}
+		{
+			lua_pushcfunction(L, &luaopen_lfs);
+			if (lua_pcall(L, 0, 0, traceback_idx) != 0) {
+				fprintf(stderr, "error: failed to load LFS: %s\n", lua_tostring(L, -1));
+				goto exit_close_state;
+			}
+
+			lua_pushliteral(L, "lfs");
+			lua_getglobal(L, "lfs");
+			lua_rawset(L, -3);
+			lua_pushnil(L);
+			lua_setglobal(L, "lfs");
 		}
 		{
 			lua_pushstring(L, "arg");
