@@ -510,7 +510,14 @@ local function wrap_environ(environ)
 					return wrap_environ(t)
 				end
 			},
-			{__index = environ}
+			{
+				__index = function(self, k)
+					-- We use a function here to prevent rascals
+					-- from modifying the underlying environment
+					-- object
+					return environ[k]
+				end
+			}
 		),
 		__newindex = function()
 			error('re-assigning environment variables is not allowed; use ENV:extend() instead')
@@ -519,9 +526,11 @@ local function wrap_environ(environ)
 			return self[k]
 		end,
 		__pairs = function(self)
-			return pairs(environ)
-		end,
-		__environ = environ -- For compatibility with other Oro functions
+			p = pairs(environ)
+			return function(self_, k)
+				return p(environ, k)
+			end
+		end
 	})
 end
 

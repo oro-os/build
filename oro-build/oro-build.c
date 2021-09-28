@@ -81,6 +81,47 @@ static void pushenv(lua_State *L) {
 	}
 }
 
+static int next_iterator(lua_State *L) {
+	/* -1, +(2|0) */
+	/*
+		requires upvalues:
+		   1: the table on which to call lua_next()
+	*/
+	return lua_next(L, lua_upvalueindex(1))
+		? 2
+		: 0;
+}
+
+static int pair_iterator(lua_State *L) {
+	/* -1, +2 */
+	/*
+		requires upvalues:
+		   1: the table on which to call the iterator
+		   2: the iterator function (usually result
+		      of a call to __pairs() metamethod)
+	*/
+
+	lua_pushvalue(L, lua_upvalueindex(1));
+	lua_pushvalue(L, -2);
+	lua_copy(L, lua_upvalueindex(2), -3);
+	lua_call(L, 2, 2);
+	return 2;
+}
+
+static int iterator_next(lua_State *L) {
+	/* -2, +(1|3), r */
+	lua_pushvalue(L, -1);
+	lua_copy(L, -3, -2);
+	lua_call(L, 1, 2);
+
+	if (lua_isnil(L, -2)) {
+		lua_pop(L, 2);
+		return 0;
+	}
+
+	return 1;
+}
+
 static int execute_process(lua_State *L) {
 	/* -, +3, ERR */
 	int success = 0;
@@ -134,21 +175,26 @@ static int execute_process(lua_State *L) {
 			struct string_link_s *parent;
 		} *cur_link = NULL;
 
-		/* If this is an ENV table (with an __environ meta key) use that instead. */
-		switch (luaL_getmetafield(L, -1, "__environ")) {
-			case LUA_TNIL:
-				break;
-			case LUA_TTABLE:
-				lua_remove(L, -2);
-				break;
+		switch (luaL_getmetafield(L, -1, "__pairs")) {
 			default:
-				/* ignore it. */
+				/* unsupported type; fall back to default */
 				lua_pop(L, 1);
+				/* fallthrough */
+			case LUA_TNIL:
+				/* nothing was pushed; no need to pop first. */
+				lua_pushcclosure(L, &next_iterator, 1);
+				break;
+			case LUA_TFUNCTION:
+				/* call the __pairs() metamethod and get a function back */
+				lua_pushvalue(L, -2);
+				lua_call(L, 1, 1);
+				/* now pass the pairs function iterator closure */
+				lua_pushcclosure(L, &pair_iterator, 2);
 				break;
 		}
 
 		lua_pushnil(L);
-		while (lua_next(L, -2) != 0) {
+		while (iterator_next(L)) {
 			struct string_link_s *next_link = malloc(sizeof(*next_link));
 			if (next_link == NULL) abort(); /* TODO better error message */
 
@@ -174,8 +220,11 @@ static int execute_process(lua_State *L) {
 
 			++env_count;
 
+			/* pop the value, leaving just the iterator and key */
 			lua_pop(L, 1);
 		}
+		/* pop the iterator */
+		lua_pop(L, 1);
 
 		const char **new_env = malloc(sizeof(*new_env) * (env_count + 1));
 
@@ -222,7 +271,8 @@ env_err_free:
 		lua_pushliteral(L, "`env` option must either be nil or a table");
 		goto err_free;
 	}
-	lua_pop(L, nargs + 1);
+
+	lua_pop(L, nargs);
 
 	if (r != 0) {
 		lua_pushliteral(L, "failed to create subprocess");
