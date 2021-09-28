@@ -496,6 +496,31 @@ local function make_path_factory(from, retarget_to)
 	end
 end
 
+local function wrap_environ(environ)
+	return setmetatable({}, {
+		__index = setmetatable(
+			{
+				extend = function(self, new_env)
+					local t = {}
+					for k, v in pairs(self) do t[k] = self[k] end
+					for k, v in pairs(new_env) do t[k] = new_env[k] end
+					return wrap_environ(t)
+				end
+			},
+			{__index = environ}
+		),
+		__newindex = function()
+			error('re-assigning environment variables is not allowed; use ENV:extend() instead')
+		end,
+		__call = function(self, k)
+			return self[k]
+		end,
+		__pairs = function(self)
+			return pairs(environ)
+		end
+	})
+end
+
 local function make_env(source_dir, build_dir, on_rule, on_entry)
 	assert(Oro.path.isabs(source_dir))
 	assert(Oro.path.isabs(build_dir))
@@ -534,6 +559,7 @@ local function make_env(source_dir, build_dir, on_rule, on_entry)
 	env.Set = Set
 	env.List = List
 	env.execute_immediately = Oro.execute
+	env.ENV = wrap_environ(Oro.env)
 
 	return env
 end

@@ -12,6 +12,10 @@
 #include <string.h>
 #include <errno.h>
 
+#ifdef _WIN32
+#	include <windows.h>
+#endif
+
 static int display_traceback(lua_State *L) {
 	/* -, +1 */
 	lua_getglobal(L, "debug");
@@ -31,6 +35,50 @@ static int read_stream_to_rs(FILE *fd, rapidstring *rs) {
 	}
 
 	return ferror(fd);
+}
+
+static void pushenv(lua_State *L) {
+	/* -, +1 */
+	lua_newtable(L);
+
+#ifdef _WIN32
+	LPCH env_p = GetEnvironmentStrings();
+#else
+	extern char **environ;
+	char **env_p = environ;
+#endif
+
+	while (*env_p) {
+#ifdef _WIN32
+		char *var = env_p;
+#else
+		char *var = *env_p;
+#endif
+		char *eq = strchr(var, '=');
+
+		if (eq == NULL) {
+#ifdef _WIN32
+			/* skip (scan until next null) */
+			env_p += strlen(env_p) + 1;
+#else
+			/* skip (go to next pointer) */
+			++env_p;
+#endif
+			continue;
+		}
+
+		lua_pushlstring(L, var, eq - var);
+		var += eq - var + 1;
+		size_t len = strlen(var);
+		lua_pushlstring(L, var, len);
+		lua_rawset(L, -3);
+
+#ifdef _WIN32
+		env_p += (var + len + 1) - env_p;
+#else
+		++env_p;
+#endif
+	}
 }
 
 static int execute_process(lua_State *L) {
@@ -323,6 +371,11 @@ int main(int argc, char *argv[]) {
 			lua_rawset(L, -3);
 			lua_pushnil(L);
 			lua_setglobal(L, "lfs");
+		}
+		{
+			lua_pushstring(L, "env");
+			pushenv(L);
+			lua_rawset(L, -3);
 		}
 		{
 			lua_pushstring(L, "arg");
