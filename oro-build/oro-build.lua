@@ -525,7 +525,48 @@ local function wrap_environ(environ)
 	})
 end
 
-local function make_env(source_dir, build_dir, on_rule, on_entry)
+local function wrap_config(config)
+	return setmetatable(config, {
+		__index={
+			extend = function(self, new_config)
+				local t = {}
+				for k, v in pairs(self) do t[k] = v end
+				for k, v in pairs(new_config) do
+					if v == false then v = nil end
+					t[k] = v
+				end
+				return wrap_config(t)
+			end,
+			default = function(self, k, v)
+				if self[k] == nil then
+					self[k] = new_config
+				end
+				return self
+			end
+		},
+		__newindex=function(self, k, v)
+			-- Make sure the config key doesn't conflict
+			-- with a method name.
+			assert(
+				getmetatable(self).__index[k] == nil,
+				'cannot set config key to a Config method name: '..tostring(k)
+			)
+			return rawset(self, k, v)
+		end,
+		__call=function(self, k)
+			-- Make sure the config key isn't part of the
+			-- interface, as we don't want to encourage
+			-- accidental mis-use.
+			assert(
+				getmetatable(self).__index[k] == nil,
+				'not a config key; use C:'..tostring(k)..'() instead'
+			)
+			return self[k]
+		end
+	})
+end
+
+local function make_env(source_dir, build_dir, environ, config, on_rule, on_entry)
 	assert(Oro.path.isabs(source_dir))
 	assert(Oro.path.isabs(build_dir))
 
@@ -563,9 +604,19 @@ local function make_env(source_dir, build_dir, on_rule, on_entry)
 	env.Set = Set
 	env.List = List
 	env.execute_immediately = Oro.execute
-	env.ENV = wrap_environ(Oro.env)
+	env.E = environ
+	env.C = config
 
 	return env
+end
+
+-- Read config variables from the command line
+local raw_config = {}
+for _, arg in ipairs(Oro.arg) do
+	local k, v = select(3, arg:find('^([^=]+)=(.*)$'))
+	if k ~= nil then
+		raw_config[k] = v
+	end
 end
 
 -- Initialize build script environment
@@ -576,6 +627,8 @@ local ninja = Ninjafile()
 local env = make_env(
 	Oro.path.dirname(Oro.path.abspath(Oro.build_script)),
 	Oro.path.abspath(Oro.bin_dir),
+	wrap_environ(Oro.env),
+	wrap_config(raw_config),
 	function(opts) ninja:add_rule(opts) end,
 	function(rule_name, opts) ninja:add_build(rule_name, opts) end
 )
