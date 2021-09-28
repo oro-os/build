@@ -533,6 +533,7 @@ local function make_env(source_dir, build_dir, on_rule, on_entry)
 	env.print = oro_print
 	env.Set = Set
 	env.List = List
+	env.execute_immediately = Oro.execute
 
 	return env
 end

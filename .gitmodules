@@ -7,3 +7,9 @@
 [submodule "oro-build/ext/lua-path"]
 	path = oro-build/ext/lua-path
 	url = https://github.com/moteus/lua-path.git
+[submodule "oro-build/ext/subprocess.h"]
+	path = oro-build/ext/subprocess.h
+	url = https://github.com/sheredom/subprocess.h.git
+[submodule "oro-build/ext/rapidstring"]
+	path = oro-build/ext/rapidstring
+	url = https://github.com/Qix-/rapidstring.git
