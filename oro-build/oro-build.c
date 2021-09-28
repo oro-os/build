@@ -69,11 +69,94 @@ static int execute_process(lua_State *L) {
 		command_line[i] = lua_tostring(L, -1);
 	}
 
-	r = subprocess_create(
-		command_line,
-		subprocess_option_no_window | subprocess_option_inherit_environment,
-		&subprocess
-	);
+	r = lua_getfield(L, 1, "env");
+	if (r == LUA_TNIL) {
+		r = subprocess_create(
+			command_line,
+			subprocess_option_no_window | subprocess_option_inherit_environment,
+			&subprocess
+		);
+	} else if (r == LUA_TTABLE) {
+		int env_success = 0;
+		int env_count = 0;
+
+		struct string_link_s {
+			rapidstring rs;
+			struct string_link_s *parent;
+		} *cur_link = NULL;
+
+		lua_pushnil(L);
+		while (lua_next(L, -2) != 0) {
+			struct string_link_s *next_link = malloc(sizeof(*next_link));
+			if (next_link == NULL) abort(); /* TODO better error message */
+
+			if (lua_type(L, -2) == LUA_TNUMBER) {
+				size_t sz;
+				const char *str = lua_tolstring(L, -1, &sz);
+				rs_init_w_n(&next_link->rs, str, sz);
+			} else {
+				size_t sz;
+				const char *str = lua_tolstring(L, -2, &sz);
+				rs_init_w_n(&next_link->rs, str, sz);
+				rs_cat_n(&next_link->rs, "=", 1);
+				str = lua_tolstring(L, -1, &sz);
+				rs_cat_n(&next_link->rs, str, sz);
+			}
+
+			next_link->parent = cur_link;
+			cur_link = next_link;
+
+			++env_count;
+
+			lua_pop(L, 1);
+		}
+
+		const char **new_env = malloc(sizeof(*new_env) * (env_count + 1));
+
+		if (new_env == NULL) {
+			lua_pushliteral(L, "failed to allocate memory for subprocess environment");
+			goto env_err_free;
+		}
+
+		{
+			struct string_link_s *link = cur_link;
+
+			new_env[env_count--] = NULL;
+			for (int i = env_count; i >= 0; i--) {
+				new_env[i] = rs_data_c(&link->rs);
+				link = link->parent;
+			}
+		}
+
+		r = subprocess_create_ex(
+			command_line,
+			subprocess_option_no_window,
+			new_env,
+			&subprocess
+		);
+
+		/*
+			NOTE: this just means we got through the subprocess creation step,
+			NOTE: NOT that the creation was a success. Confusing, I know. Sorry.
+		*/
+		env_success = 1;
+
+env_err_free:
+		free(new_env);
+
+		while (cur_link != NULL) {
+			struct string_link_s *link = cur_link;
+			cur_link = link->parent;
+			rs_free(&link->rs);
+			free(link);
+		}
+
+		if (!env_success) goto err_free;
+	} else {
+		lua_pushliteral(L, "`env` option must either be nil or a table");
+		goto err_free;
+	}
+	lua_pop(L, nargs + 1);
 
 	if (r != 0) {
 		lua_pushliteral(L, "failed to create subprocess");
@@ -126,8 +209,6 @@ static int execute_process(lua_State *L) {
 		lua_pushfstring(L, "failed to read subprocess stderr: %s", strerror(errno));
 		goto err_destroy;
 	}
-
-	lua_pop(L, nargs);
 
 	if (status_code != 0 && should_throw) {
 		rapidstring errmsg;

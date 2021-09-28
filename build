@@ -28,8 +28,11 @@ if [ ! -f "$BIN_DIR/.oro-build" ] || test "$ROOT_DIR/oro-build.c" -nt "$BIN_DIR/
 		die "either \$CC not set, or it/'cc' (the default) does not refer to a valid program"
 
 	echo 'first run detected; bootstrapping Oro build...'
+	# TIP: change the `-O3 -g0` to `-O0 -g3` to compile with debug information
 	"${CC}" -o "$BIN_DIR/.oro-build" -O3 -g0 -DMAKE_LIB=1 -DLUA_ANSI=1 -Wall -Wextra -Werror -I"$ROOT_DIR/ext/lua" "$ROOT_DIR/oro-build.c" -lm
 fi
 
+# TIP: prefix this line with `gdb --args` to debug the build system if there are crashes.
 "${BIN_DIR}/.oro-build" "$ROOT_DIR" "$BIN_DIR" "$BOOTSTRAP_SCRIPT" "$BUILD_SCRIPT" "$@"
+
 # vim: set syntax=sh:
