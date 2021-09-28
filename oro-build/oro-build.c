@@ -144,12 +144,16 @@ static int execute_process(lua_State *L) {
 				const char *str = lua_tolstring(L, -1, &sz);
 				rs_init_w_n(&next_link->rs, str, sz);
 			} else {
+				/* duplicate the key so we can safely run `tolstring()` on it */
+				lua_pushvalue(L, -2);
+
 				size_t sz;
-				const char *str = lua_tolstring(L, -2, &sz);
+				const char *str = lua_tolstring(L, -1, &sz);
 				rs_init_w_n(&next_link->rs, str, sz);
 				rs_cat_n(&next_link->rs, "=", 1);
-				str = lua_tolstring(L, -1, &sz);
+				str = lua_tolstring(L, -2, &sz);
 				rs_cat_n(&next_link->rs, str, sz);
+				lua_pop(L, 1);
 			}
 
 			next_link->parent = cur_link;
