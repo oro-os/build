@@ -134,6 +134,19 @@ static int execute_process(lua_State *L) {
 			struct string_link_s *parent;
 		} *cur_link = NULL;
 
+		/* If this is an ENV table (with an __environ meta key) use that instead. */
+		switch (luaL_getmetafield(L, -1, "__environ")) {
+			case LUA_TNIL:
+				break;
+			case LUA_TTABLE:
+				lua_remove(L, -2);
+				break;
+			default:
+				/* ignore it. */
+				lua_pop(L, 1);
+				break;
+		}
+
 		lua_pushnil(L);
 		while (lua_next(L, -2) != 0) {
 			struct string_link_s *next_link = malloc(sizeof(*next_link));

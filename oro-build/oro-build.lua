@@ -520,7 +520,8 @@ local function wrap_environ(environ)
 		end,
 		__pairs = function(self)
 			return pairs(environ)
-		end
+		end,
+		__environ = environ -- For compatibility with other Oro functions
 	})
 end
 
