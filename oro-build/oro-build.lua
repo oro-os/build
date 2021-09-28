@@ -502,8 +502,11 @@ local function wrap_environ(environ)
 			{
 				extend = function(self, new_env)
 					local t = {}
-					for k, v in pairs(self) do t[k] = self[k] end
-					for k, v in pairs(new_env) do t[k] = new_env[k] end
+					for k, v in pairs(self) do t[k] = v end
+					for k, v in pairs(new_env) do
+						if v == false then v = nil end
+						t[k] = v
+					end
 					return wrap_environ(t)
 				end
 			},
