@@ -34,6 +34,7 @@ static int read_stream_to_rs(FILE *fd, rapidstring *rs) {
 }
 
 static int execute_process(lua_State *L) {
+	/* -, +3, ERR */
 	int success = 0;
 	int status_code = -1;
 	int should_throw = 1;
