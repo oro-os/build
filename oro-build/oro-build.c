@@ -175,6 +175,7 @@ static int execute_process(lua_State *L) {
 			struct string_link_s *parent;
 		} *cur_link = NULL;
 
+		/* More information: https://stackoverflow.com/a/69367175/510036 */
 		switch (luaL_getmetafield(L, -1, "__pairs")) {
 			default:
 				/* unsupported type; fall back to default */
