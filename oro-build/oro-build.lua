@@ -526,9 +526,8 @@ local function wrap_environ(environ)
 			return self[k]
 		end,
 		__pairs = function(self)
-			p = pairs(environ)
 			return function(self_, k)
-				return p(environ, k)
+				return next(environ, k)
 			end
 		end
 	})
