@@ -380,7 +380,7 @@ local function pathstring(x, allow_base)
 	-- TODO here is a path factory; we should probably
 	-- TODO have a PathFactory metatable and isinstance()
 	-- TODO check it.
-	assert(allow_base or type(s) ~= 'function', 'cannot pass a path factory (`O` or `S`) to :path()')
+	assert(allow_base or type(s) ~= 'function', 'cannot pass a path factory (`S` or `B`) to :path()')
 	if type(x) == 'function' then return x('.')._base end
 	return isinstance(x, Path) and x[prop] or x
 end
