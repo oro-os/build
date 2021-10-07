@@ -146,6 +146,11 @@ io.stderr:write('(Re-)configuring project...\n')
 
 local ninja = Ninjafile()
 
+-- Make sure the build script follows the name convention
+if select(2, Oro.path.splitext(Oro.build_script)) ~= '.oro' then
+	error('build scripts must have `.oro\' extension: ' .. tostring(Oro.build_script))
+end
+
 local env = make_env(
 	Oro.path.dirname(Oro.path.abspath(Oro.build_script)),
 	Oro.path.abspath(Oro.bin_dir),
