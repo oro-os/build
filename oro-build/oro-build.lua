@@ -107,7 +107,6 @@ local function flat(t)
 end
 
 local ninja_rule_keys = Set {
-	'name', -- NOTE: *not* a real Ninja key; it's ignored by the emitter.
 	'command', 'depfile', 'deps', 'msvc_deps_prefix',
 	'description', 'dyndep', 'generator', 'in',
 	'in_newline', 'out', 'restat', 'rspfile',
@@ -147,15 +146,10 @@ function Ninja:write(to_stream)
 		to_stream:write(tostring(name))
 
 		for opt_name, opt_val in pairs(opts) do
-			-- special case: 'name' is not a real
-			-- ninja key but is used internally
-			-- to create a cleaner API.
-			if opt_name ~= 'name' then
-				to_stream:write('\n  ')
-				to_stream:write(tostring(opt_name))
-				to_stream:write(' =')
-				emit(opt_val)
-			end
+			to_stream:write('\n  ')
+			to_stream:write(tostring(opt_name))
+			to_stream:write(' =')
+			emit(opt_val)
 		end
 	end
 
@@ -244,12 +238,11 @@ function Ninja:write(to_stream)
 	to_stream:write('\n\n# END OF BUILD SCRIPT\n')
 end
 
-function Ninja:add_rule(opts)
-	assert(opts.name ~= nil, 'Ninja:add_rule() options must include `name` field')
+function Ninja:add_rule(name, opts)
 	assert(opts.command ~= nil, 'Ninja:add_rule() options must include `command` field')
-	assert(self.rules[opts.name] == nil, 'duplicate rule registered: ' .. opts.name)
+	assert(self.rules[name] == nil, 'duplicate rule registered: ' .. name)
 
-	self.rules[opts.name] = opts
+	self.rules[name] = opts
 
 	for k, _ in pairs(opts) do
 		assert(ninja_rule_keys[k], 'invalid Ninja rule option name: '..k)
@@ -348,25 +341,23 @@ local function oro_print(...)
 	io.stderr:write('\n')
 end
 
-local anonymous_rule_cursor = 1
+local rule_cursor = 1
 
 local function make_rule_factory(on_rule, on_entry)
 	local function Rule(rule_opts)
 		assert(type(rule_opts) == 'table', 'rule options must be a table')
 		assert(rule_opts.command ~= nil, 'Rule() options must include `command` field')
 
-		if rule_opts.name == nil then
-			rule_opts.name = '_R_' .. tostring(anonymous_rule_cursor)
-			anonymous_rule_cursor = anonymous_rule_cursor + 1
-		end
+		local name = '_R_' .. tostring(rule_cursor)
+		rule_cursor = rule_cursor + 1
 
-		on_rule(rule_opts)
+		on_rule(name, rule_opts)
 
 		return function(entry_opts)
 			assert(type(entry_opts) == 'table', 'build options must be a table')
 			assert(entry_opts.out ~= nil, 'build options must include `out` field')
 
-			on_entry(rule_opts.name, entry_opts)
+			on_entry(name, entry_opts)
 
 			return entry_opts.out
 		end
@@ -577,7 +568,6 @@ end
 local function make_env(source_dir, build_dir, environ, config, on_rule, on_entry)
 	assert(Oro.path.isabs(source_dir))
 	assert(Oro.path.isabs(build_dir))
-
 	local env = {}
 
 	-- Lua builtins
@@ -637,7 +627,7 @@ local env = make_env(
 	Oro.path.abspath(Oro.bin_dir),
 	wrap_environ(Oro.env),
 	wrap_config(raw_config),
-	function(opts) ninja:add_rule(opts) end,
+	function(rule_name, opts) ninja:add_rule(rule_name, opts) end,
 	function(rule_name, opts) ninja:add_build(rule_name, opts) end
 )
 
@@ -662,12 +652,11 @@ end
 -- are checked in order to re-config)
 local ninja_out = Oro.bin_dir .. '/build.ninja'
 
-ninja:add_rule {
-	name = '_oro_build_regenerator',
+ninja:add_rule('_oro_build_regenerator', {
 	command = { 'cd', Oro.path.currentdir(), '&&', 'env', '_ORO_BUILD_REGEN=1', arg },
 	description = { 'Reconfigure', Oro.bin_dir },
 	generator = '1'
-}
+})
 
 ninja:add_build('_oro_build_regenerator', {
 	out = ninja:add_default(env.B'build.ninja'),
