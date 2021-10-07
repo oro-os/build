@@ -168,8 +168,6 @@ function Ninja:add_rule(name, opts)
 end
 
 function Ninja:add_build(rule_name, opts)
-	print('BUILD name='..tostring(rule_name))
-	for k,v in pairs(opts) do print('- '..tostring(k)..'='..tostring(v)) end
 	-- convert 'In' to 'in'
 	-- this is a convenience since `in` is a keyword in
 	-- lua and thus cannot be used as a key in a literal
