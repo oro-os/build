@@ -64,7 +64,7 @@ function Path:ext(s)
 	end
 end
 
-function Path:__tostring()
+function Path__tostring(self)
 	local path, base = self._path, self._base
 
 	if #base == 0 then return path end
@@ -76,40 +76,85 @@ function Path:__tostring()
 	)
 end
 
-local function make_path_factory(from, retarget_to)
+local function asabs(pth)
+	if Oro.path.isabs(pth) then
+		return pth
+	else
+		return Oro.path.join('/', pth)
+	end
+end
+
+local function asrel(pth)
+	if Oro.path.isabs(pth) then
+		if pth == '/' then return '' end
+		return Oro.path.join(Oro.path.splitroot(pth))
+	else
+		return pth
+	end
+end
+
+local function normalize(pth)
+	return Oro.path.remove_dir_end(Oro.path.normalize(pth))
+end
+
+local function relpath(from, to)
 	assert(Oro.path.isabs(from))
-	assert(Oro.path.isabs(retarget_to))
+	assert(Oro.path.isabs(to))
 
-	-- strip common prefix
-	local from_root, retg_root = nil, nil
-	while #from > 0 and #retarget_to > 0 do
-		-- yes, Oro.path.join('/', '/foo') results in '/foo'.
-		from_root, from = Oro.path.splitroot(Oro.path.join('/', from))
-		retg_root, retarget_to = Oro.path.splitroot(Oro.path.join('/', retarget_to))
+	if from == to then
+		return '.'
+	end
 
-		if from_root ~= retg_root then
+	while true do
+		local f_leaf, f_path = Oro.path.splitroot(from)
+		local t_leaf, t_path = Oro.path.splitroot(to)
+
+		if f_leaf == t_leaf then
+			from = asabs(f_path)
+			to = asabs(t_path)
+		else
 			break
 		end
 	end
 
-	-- Re-write difference in path depth with `..`'s.
+	from = normalize(asrel(from))
+	to = normalize(asrel(to))
+
 	local joins = {}
-	while #from > 0 do
-		from_root, from = Oro.path.splitroot(Oro.path.join('/', from))
-		joins[#joins + 1] = '..'
+
+	while true do
+		if from == '' then
+			break
+		else
+			joins[#joins + 1] = '..'
+		end
+
+		from = Oro.path.dirname(from)
 	end
 
-	-- Construct the new base path
-	local base = Oro.path.remove_dir_end(Oro.path.join(unpack(joins) or '', retarget_to))
+	joins[#joins + 1] = to
+
+	return normalize(
+		Oro.path.join((table.unpack or unpack)(joins))
+	)
+end
+
+local function make_path_factory(source_root, build_root)
+	assert(source_root ~= nil)
+	assert(build_root ~= nil)
+
+	source_root = normalize(source_root)
+	build_root = normalize(build_root)
+
+	local base = relpath(build_root, source_root)
 
 	local inner = function(path)
+		assert(type(path) == 'string')
+
 		-- Translate `S'/foo'` to `S'./foo'`
 		if Oro.path.isabs(path) then
-			-- this is a bit magic, sorry.
-			-- basically, the lua-path function `splitroot`
-			-- splits a path by
 			path = (Oro.path.has_dir_end(path) and Oro.path.ensure_dir_end or Oro.path.remove_dir_end)(
-				Oro.path.join(Oro.path.splitroot(path))
+				asrel(path)
 			)
 		end
 
@@ -120,14 +165,16 @@ local function make_path_factory(from, retarget_to)
 			},
 			{
 				__index = Path,
-				__tostring = Path.__tostring
+				__tostring = Path__tostring
 			}
 		)
 	end
 
 	return function(path)
-		if type(path) == 'string' or isinstance(path, Path) then
+		if type(path) == 'string' then
 			return inner(path)
+		elseif isinstance(path, Path) then
+			return inner(path._path)
 		elseif type(path) == 'table' then
 			local nt = {}
 			for i = 1, #path do
@@ -142,5 +189,11 @@ end
 
 return tablefunc(
 	make_path_factory,
-	{ Path = Path }
+	{
+		Path = Path,
+		asabs = asabs,
+		asrel = asrel,
+		relpath = relpath,
+		normalize = normalize
+	}
 )

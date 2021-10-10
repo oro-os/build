@@ -13,8 +13,14 @@
 -- modified
 --
 
+local util = require 'internal.util'
+local tablefunc = util.tablefunc
+
+local Environ = {} -- dummy metatable
+
 local function wrap_environ(environ)
 	return setmetatable({}, {
+		__metatable = Environ,
 		__index = setmetatable(
 			{
 				extend = function(self, new_env)
@@ -50,4 +56,7 @@ local function wrap_environ(environ)
 	})
 end
 
-return wrap_environ
+return tablefunc(
+	wrap_environ,
+	{ Environ = Environ }
+)

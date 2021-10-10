@@ -25,6 +25,7 @@ package.path = Oro.root_dir .. '/ext/lua-path/lua/?.lua'
 package.loaded.lfs = Oro.lfs
 require('path.fs') -- (just asserts that 'lfs' is loaded properly)
 Oro.path = (require 'path').new('/')
+local P = Oro.path -- cleans up the source considerably
 
 -- Re-set the inclusion path to the Oro build library
 -- as well as the source path.
@@ -42,8 +43,10 @@ local wrap_environ = require 'internal.environ'
 local wrap_config = require 'internal.config'
 
 local Set = util.Set
-local isinstance = util.isinstance
 local List = util.List
+local isinstance = util.isinstance
+local shallowclone = util.shallowclone
+local relpath = make_path_factory.relpath
 
 -- Specialized output function
 -- (prefixes the calling file's name)
@@ -89,9 +92,37 @@ local function make_rule_factory(on_rule, on_entry)
 	return Rule
 end
 
-local function make_env(source_dir, build_dir, environ, config, on_rule, on_entry)
-	assert(Oro.path.isabs(source_dir))
-	assert(Oro.path.isabs(build_dir))
+-- Read config variables from the command line
+local raw_config = {}
+for _, arg in ipairs(Oro.arg) do
+	local k, v = select(3, arg:find('^([^=]+)=(.*)$'))
+	if k ~= nil then
+		raw_config[k] = v
+	end
+end
+
+-- Initialize build script environment
+io.stderr:write('(Re-)configuring project...\n')
+
+local ninja = Ninjafile()
+local function on_ninja_rule(rule_name, opts) ninja:add_rule(rule_name, opts) end
+local function on_ninja_build(rule_name, opts) ninja:add_build(rule_name, opts) end
+
+local config_deps = List{ '.oro-build' }
+
+local root_build_dir_abs = P.abspath(Oro.bin_dir)
+
+function run_build_script(build_script, context)
+	-- Make sure the build script follows the name convention
+	if select(2, P.splitext(build_script)) ~= '.oro' then
+		error('build scripts must have `.oro\' extension: ' .. tostring(build_script))
+	end
+
+	assert(not P.isabs(build_script))
+	assert(P.normalize(build_script):sub(1, 2) ~= '..')
+	assert(not P.isabs(context.source_dir))
+	assert(not P.isabs(context.build_dir))
+
 	local env = {}
 
 	-- Lua builtins
@@ -112,64 +143,147 @@ local function make_env(source_dir, build_dir, environ, config, on_rule, on_entr
 	env.tostring = tostring
 	env.type = type
 
+	env.Config = function (t)
+		if isinstance(t, wrap_config.Config) then
+			return t:extend{}
+		end
+
+		return wrap_config(t or {})
+	end
+
+	env.require = function(script)
+		local overrides = {}
+
+		if type(script) == 'table' then
+			assert(
+				#script == 1,
+				'`require\' with table must only have one position element; got '..tonumber(#script)
+			)
+
+			overrides = script
+			script = script[1]
+		end
+
+		local original_script = script
+		assert(type(script) == 'string', '`require\'d script filenames must be strings')
+
+		-- validate overrides
+		assert(
+			overrides.config == nil
+			or isinstance(overrides.config, wrap_config.Config),
+			'`config\' override in `require\' must be an instance of Config'
+		)
+		assert(
+			overrides.env == nil
+			or isinstance(overrides.env, wrap_environ.Environ),
+			'`env\' override in `require\' must be an instance of Environ'
+		)
+
+		-- Lua pattern matching is a bit underpowered,
+		-- so we use some primitive checks to enforce
+		-- /^\.?[\w_-]+(\.[\w_-]+)*$/
+		assert(
+			script:find('^[%w%._-]+$') ~= nil and script:find('%.%.') == nil,
+			'`require\'d script filename is invalid: ' .. script
+		)
+
+		if script:sub(1, 1) == '.' then
+			-- Relative source import
+			script = script:sub(2)
+
+			-- check for `require '.'`
+			assert(#script > 0, 'cannot `require\' the current directory: .')
+
+			-- resolve build path
+			local search_path = (
+				P.normalize(P.join(context.source_dir, './?.oro'))
+				.. ';' .. P.normalize(P.join(context.source_dir, './?/build.oro'))
+			)
+
+			local discovered, attempted = package.searchpath(
+				script,
+				search_path
+			)
+
+			if discovered == nil then
+				error(
+					'`require\'d path not found: ' .. original_script
+					.. '\n\n' .. attempted
+				)
+			end
+
+			discovered = P.normalize(discovered)
+
+			-- build nested context
+			local context = shallowclone(context)
+
+			context.config = overrides.config or context.config
+			context.environ = overrides.env or context.environ
+			context.source_dir = P.normalize(P.join(context.source_dir, P.dirname(discovered)))
+			context.build_dir = P.normalize(P.join(context.build_dir, P.dirname(discovered)))
+
+			-- immutable-ize context
+			context.config = context.config:extend{}
+			context.environ = context.environ:extend{}
+
+			-- process the config
+			return run_build_script(discovered, context)
+		else
+			-- Library import
+			error 'fixme! library imports not yet implemented'
+		end
+
+	end
+
 	-- Lua libraries (be careful with which are whitelisted)
 	env.table = table
 	env.string = string
 
 	-- Build-related functions
-	env.Rule = make_rule_factory(on_rule, on_entry)
-	env.S = make_path_factory(build_dir, source_dir)
-	env.B = make_path_factory(build_dir, build_dir)
+	env.Rule = make_rule_factory(on_ninja_rule, on_ninja_build)
+	env.S = make_path_factory(
+		P.abspath(context.source_dir),
+		root_build_dir_abs
+	)
+	env.B = make_path_factory(
+		P.abspath(context.build_dir),
+		root_build_dir_abs
+	)
 
 	-- Extra utilities
 	env.print = oro_print
 	env.Set = Set
 	env.List = List
 	env.execute_immediately = Oro.execute
-	env.E = environ
-	env.C = config
+	env.E = context.environ
+	env.C = context.config
 
-	return env
+	-- Append the build script as a dependency
+	config_deps[nil] = relpath(
+		root_build_dir_abs,
+		P.abspath(build_script)
+	)
+
+	-- Run build configuration script
+	local chunk, err = loadfile(build_script, 'bt', env)
+	assert(chunk ~= nil, err)
+
+	return chunk()
 end
 
--- Read config variables from the command line
-local raw_config = {}
-for _, arg in ipairs(Oro.arg) do
-	local k, v = select(3, arg:find('^([^=]+)=(.*)$'))
-	if k ~= nil then
-		raw_config[k] = v
-	end
-end
-
--- Initialize build script environment
-io.stderr:write('(Re-)configuring project...\n')
-
-local ninja = Ninjafile()
-
--- Make sure the build script follows the name convention
-if select(2, Oro.path.splitext(Oro.build_script)) ~= '.oro' then
-	error('build scripts must have `.oro\' extension: ' .. tostring(Oro.build_script))
-end
-
-local env = make_env(
-	Oro.path.dirname(Oro.path.abspath(Oro.build_script)),
-	Oro.path.abspath(Oro.bin_dir),
-	wrap_environ(Oro.env),
-	wrap_config(raw_config),
-	function(rule_name, opts) ninja:add_rule(rule_name, opts) end,
-	function(rule_name, opts) ninja:add_build(rule_name, opts) end
+-- Run main build script
+local exports = run_build_script(
+	Oro.build_script,
+	{
+		source_dir = P.dirname(Oro.build_script),
+		build_dir = Oro.bin_dir,
+		config = wrap_config(raw_config),
+		environ = wrap_environ(Oro.env)
+	}
 )
 
-local config_deps = {
-	env.S(Oro.build_script),
-	env.B'.oro-build'
-}
-
--- Run build configuration script
-local chunk, err = loadfile(Oro.build_script, 'bt', env)
-assert(chunk ~= nil, err)
-
-for output in flat{chunk()} do
+-- Add all returned targets as ninja defaults
+for output in flat(exports) do
 	ninja:add_default(output)
 end
 
@@ -182,13 +296,13 @@ end
 local ninja_out = Oro.bin_dir .. '/build.ninja'
 
 ninja:add_rule('_oro_build_regenerator', {
-	command = { 'cd', Oro.path.currentdir(), '&&', 'env', '_ORO_BUILD_REGEN=1', arg },
+	command = { 'cd', P.currentdir(), '&&', 'env', '_ORO_BUILD_REGEN=1', arg },
 	description = { 'Reconfigure', Oro.bin_dir },
 	generator = '1'
 })
 
 ninja:add_build('_oro_build_regenerator', {
-	out = ninja:add_default(env.B'build.ninja'),
+	out = ninja:add_default('build.ninja'),
 	In = config_deps
 })
 
@@ -199,7 +313,7 @@ ostream:close()
 
 -- Done!
 if had_config_output then io.stderr:write('\n') end
-io.stderr:write('OK, configured: ' .. Oro.path.abspath(Oro.bin_dir) .. '\n')
+io.stderr:write('OK, configured: ' .. P.abspath(Oro.bin_dir) .. '\n')
 if os.getenv('_ORO_BUILD_REGEN') == nil then
 	io.stderr:write('You should now run: ninja -C \''..Oro.bin_dir..'\'\n')
 end

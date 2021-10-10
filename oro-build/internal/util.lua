@@ -53,10 +53,17 @@ local function tablefunc(fn, init)
 	)
 end
 
+local function shallowclone(tbl)
+	local t = {}
+	for k,v in pairs(tbl) do t[k] = v end
+	return t
+end
+
 return {
 	Set = Set,
 	isinstance = isinstance,
 	unpack = unpack,
 	List = List,
-	tablefunc = tablefunc
+	tablefunc = tablefunc,
+	shallowclone = shallowclone
 }
