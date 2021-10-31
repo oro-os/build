@@ -16,6 +16,7 @@ local util = require 'internal.util'
 
 local unpack = util.unpack
 local tablefunc = util.tablefunc
+local isinstance = util.isinstance
 
 local Path = {}
 
@@ -35,7 +36,7 @@ function Path:path(s)
 	else
 		return setmetatable(
 			{ _path = pathstring(s), _base = self._base },
-			{ __index = Path, __tostring = Path.__tostring }
+			{ __index = Path, __tostring = Path__tostring }
 		)
 	end
 end
@@ -46,7 +47,7 @@ function Path:base(s)
 	else
 		return setmetatable(
 			{ _path = self._path, _base = pathstring(s, true) },
-			{ __index = Path, __tostring = Path.__tostring }
+			{ __index = Path, __tostring = Path__tostring }
 		)
 	end
 end
