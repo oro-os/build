@@ -66,13 +66,16 @@ local function make_oro_print(source_override)
 			source = info.source:sub(2)
 		end
 
-		io.stderr:write('-- ')
-		io.stderr:write(source)
-		io.stderr:write(':')
-		for i = 1, select('#', ...) do
-			local x = select(i, ...)
-			io.stderr:write(' ')
-			io.stderr:write(tostring(x))
+		local prefix = '-- ' .. source .. ':'
+		io.stderr:write(prefix)
+		local args = {...}
+		for _, x in ipairs(args) do
+			local linedelim = ' '
+			for _, line in ipairs(Oro.split(tostring(x), '\n')) do
+				io.stderr:write(linedelim)
+				io.stderr:write(tostring(line))
+				linedelim = '\n' .. prefix .. ' '
+			end
 		end
 		io.stderr:write('\n')
 	end
