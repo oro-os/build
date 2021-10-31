@@ -23,15 +23,28 @@ local function isinstance(v, meta)
 	return mt ~= nil and mt.__index == meta
 end
 
+local ListType = {}
+
+function ListType:pop()
+	local len = #self
+	if len == 0 then return nil end
+	local v = self[len]
+	self[len] = nil
+	return v
+end
+
 local function List(list)
 	-- copy for posterity
 	local t = {}
 
-	for i,v in ipairs(list) do
-		t[i] = v
+	if type(list) == 'table' then
+		for i,v in ipairs(list) do
+			t[i] = v
+		end
 	end
 
 	return setmetatable(t, {
+		__index = ListType,
 		__newindex = function(self, k, v)
 			if k == nil then
 				k = #self + 1
