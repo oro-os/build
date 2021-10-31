@@ -47,6 +47,7 @@ local List = util.List
 local unpack = util.unpack
 local isinstance = util.isinstance
 local shallowclone = util.shallowclone
+local tablefunc = util.tablefunc
 local relpath = make_path_factory.relpath
 
 local env_stack = List()
@@ -79,6 +80,14 @@ local function make_oro_print(source_override)
 	return oro_print
 end
 
+local function escape_ninja(str)
+	return str:gsub('[ \n]', '$%0')
+end
+
+local function escape_ninja_all(str)
+	return str:gsub('[$ \n]', '$%0')
+end
+
 local rule_cursor = 1
 local function make_rule_factory(on_rule, on_entry)
 	local function Rule(rule_opts)
@@ -100,7 +109,13 @@ local function make_rule_factory(on_rule, on_entry)
 		end
 	end
 
-	return Rule
+	return tablefunc(
+		Rule,
+		{
+			escape = escape_ninja,
+			escapeall = escape_ninja_all
+		}
+	)
 end
 
 -- Read config variables from the command line
