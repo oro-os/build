@@ -373,7 +373,7 @@ end
 local ninja_out = Oro.bin_dir .. '/build.ninja'
 
 ninja:add_rule('_oro_build_regenerator', {
-	command = { 'cd', P.currentdir(), '&&', 'env', '_ORO_BUILD_REGEN=1', Oro.build_script, Oro.bin_dir },
+	command = { 'cd', P.currentdir(), '&&', 'env', '_ORO_BUILD_REGEN=1', Oro.build_script, Oro.bin_dir, unpack(Oro.arg) },
 	description = { 'Reconfigure', Oro.bin_dir },
 	generator = '1'
 })
