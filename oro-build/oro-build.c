@@ -122,6 +122,47 @@ static int iterator_next(lua_State *L) {
 	return 1;
 }
 
+static char * oro_strndup(const char *str, size_t len) {
+	char * newstr = malloc(len + 1);
+	strncpy(newstr, str, len + 1);
+	newstr[len] = 0;
+	return newstr;
+}
+
+// https://stackoverflow.com/a/26228023/510036
+static char * oro_strsep(char **stringp, const char *delim) {
+	if (*stringp == NULL) { return NULL; }
+	char *token_start = *stringp;
+	*stringp = strpbrk(token_start, delim);
+	if (*stringp) {
+		**stringp = '\0';
+		(*stringp)++;
+	}
+	return token_start;
+}
+
+static int split_string(lua_State *L) {
+	/* -, +1, ERR */
+	size_t strn;
+	const char *str = luaL_checklstring(L, 1, &strn);
+	const char *delim = luaL_checkstring(L, 2);
+
+	lua_newtable(L);
+	char *strd = oro_strndup(str, strn);
+	char *cursor = strd;
+
+	const char *token;
+	size_t i = 0;
+	while ((token = oro_strsep(&cursor, delim))) {
+		lua_pushstring(L, token);
+		lua_seti(L, -2, ++i);
+	}
+
+	free(strd);
+
+	return 1;
+}
+
 static int execute_process(lua_State *L) {
 	/* -, +3, ERR */
 	int success = 0;
@@ -425,6 +466,11 @@ int main(int argc, char *argv[]) {
 		{
 			lua_pushstring(L, "execute");
 			lua_pushcfunction(L, execute_process);
+			lua_rawset(L, -3);
+		}
+		{
+			lua_pushstring(L, "split");
+			lua_pushcfunction(L, split_string);
 			lua_rawset(L, -3);
 		}
 		{
