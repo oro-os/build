@@ -14,6 +14,33 @@
 
 #ifdef _WIN32
 #	include <windows.h>
+#	define ORO_PLATFORM_PATH_SEP ";"
+#	define ORO_PLATFORM_PATH_DELIMS "/\\"
+#	define oro_stat _stat
+#	define ORO_S_ISREG(m) (((m) & _S_IFREG) == _S_IFREG)
+#	ifdef _S_IXUSR
+#		define ORO_S_IXUSR _S_IXUSR
+#	else
+#		define ORO_S_IXUSR 0100
+#	endif
+	typedef struct _stat oro_stat_t;
+#else
+#	if defined(_POSIX_C_SOURCE) && _POSIX_C_SOURCE < 200809L
+#		undef _POSIX_C_SOURCE
+#	endif
+#	ifndef _POSIX_C_SOURCE
+#		define _POSIX_C_SOURCE 200809L
+#	endif
+#	include <fcntl.h>
+#	include <dirent.h>
+#	include <sys/stat.h>
+#	include <sys/types.h>
+#	include <unistd.h>
+#	define ORO_PLATFORM_PATH_SEP ":"
+#	define ORO_PLATFORM_PATH_DELIMS "/"
+#	define oro_stat stat
+#	define ORO_S_ISREG S_ISREG
+	typedef struct stat oro_stat_t;
 #endif
 
 static int display_traceback(lua_State *L) {
@@ -159,6 +186,102 @@ static int split_string(lua_State *L) {
 	}
 
 	free(strd);
+
+	return 1;
+}
+
+static int try_access(const char *pathname, int amode) {
+	/* Stub wrapper that calls access(3) without affecting `errno`. */
+	int errno_before = errno;
+	int r = access(pathname, amode);
+	errno = errno_before;
+	return r;
+}
+
+static int search_path(lua_State *L) {
+	/* -, +1 */
+	const char *search = luaL_checkstring(L, 1);
+	size_t pathstringn;
+	const char *pathstring = luaL_checklstring(L, 2, &pathstringn);
+
+	if (strpbrk(search, ORO_PLATFORM_PATH_DELIMS) == NULL) {
+		const char * const delim = lua_isstring(L, 3)
+			? lua_tostring(L, 3)
+			: ORO_PLATFORM_PATH_SEP;
+
+		const char *path_entry;
+		char *pathstringd = oro_strndup(pathstring, pathstringn);
+		char *pathstringc = pathstringd;
+		int found = 0;
+
+		while ((path_entry = oro_strsep(&pathstringc, delim))) {
+			if (*path_entry == '\0') {
+				path_entry = ".";
+			}
+
+			lua_pushfstring(L, "%s%c%s", path_entry, ORO_PLATFORM_PATH_DELIMS[0], search);
+			const char *fullpath = lua_tostring(L, -1);
+
+			oro_stat_t stats;
+			errno = 0;
+			int r = oro_stat(fullpath, &stats);
+
+			if (
+				r == 0
+				&& ORO_S_ISREG(stats.st_mode)
+#			ifdef _WIN32
+				&& (stats.st_mode & ORO_S_IXUSR) != 0
+#			else
+				&& try_access(fullpath, X_OK) == 0
+#			endif
+			) {
+				found = 1;
+				break;
+			} else {
+				lua_pop(L, 1); /* NOTE: `fullpath` is no longer a valid pointer after this point */
+
+				/*
+					There are a few error cases where
+					we just want to silently ignore.
+				*/
+				switch (errno) {
+				case 0:
+					/*
+						this also handles cases where the stat()/access() call(s) succeeded,
+						but the node wasn't suitable (not a regular file or not executable).
+					*/
+				case EACCES:
+				case ELOOP:
+				case ENOENT:
+				case ENOTDIR:
+					continue;
+				}
+
+				luaL_error(
+					L,
+					/*
+						we can't re-use `fullpath` here since it's undefined
+						what happens to the pointer after we pop it, so we
+						re-create the value here.
+					*/
+					"fatal error attempting to resolve path: %s: %s%c%s (attempting to find '%s' in '%s')",
+					strerror(errno),
+					path_entry,
+					ORO_PLATFORM_PATH_DELIMS[0],
+					search,
+					search,
+					path_entry
+				);
+			}
+		}
+
+		free(pathstringd);
+
+		if (!found) lua_pushnil(L);
+	} else {
+		/* No search necessary; just return. */
+		lua_pushvalue(L, 1);
+	}
 
 	return 1;
 }
@@ -461,6 +584,11 @@ int main(int argc, char *argv[]) {
 		{
 			lua_pushstring(L, "build_script");
 			lua_pushstring(L, build_script);
+			lua_rawset(L, -3);
+		}
+		{
+			lua_pushstring(L, "search_path");
+			lua_pushcfunction(L, search_path);
 			lua_rawset(L, -3);
 		}
 		{
