@@ -44,6 +44,7 @@ local wrap_config = require 'internal.config'
 
 local Set = util.Set
 local List = util.List
+local unpack = util.unpack
 local isinstance = util.isinstance
 local shallowclone = util.shallowclone
 local relpath = make_path_factory.relpath
@@ -112,19 +113,14 @@ local config_deps = List{ '.oro-build' }
 
 local root_build_dir_abs = P.abspath(Oro.bin_dir)
 
-function run_build_script(build_script, context)
-	-- Make sure the build script follows the name convention
-	if select(2, P.splitext(build_script)) ~= '.oro' then
-		error('build scripts must have `.oro\' extension: ' .. tostring(build_script))
-	end
+local env_stack = List()
 
-	assert(not P.isabs(build_script))
-	assert(P.normalize(build_script):sub(1, 2) ~= '..')
-	assert(not P.isabs(context.source_dir))
-	assert(not P.isabs(context.build_dir))
+local function prefixC(...) return env_stack[#env_stack].config(...) end
+local function prefixE(...) return env_stack[#env_stack].environ(...) end
+local function prefixS(...) return env_stack[#env_stack].source_factory(...) end
+local function prefixB(...) return env_stack[#env_stack].build_factory(...) end
 
-	local env = {}
-
+local function pushenv(env, context)
 	-- Lua builtins
 	env.assert = assert
 	env.ipairs = ipairs
@@ -143,6 +139,13 @@ function run_build_script(build_script, context)
 	env.tostring = tostring
 	env.type = type
 
+	env.print = oro_print
+	env.Set = Set
+	env.List = List
+	env.execute_immediately = Oro.execute
+
+	env.Rule = make_rule_factory(on_ninja_rule, on_ninja_build)
+
 	env.Config = function (t)
 		if isinstance(t, wrap_config.Config) then
 			return t:extend{}
@@ -150,6 +153,47 @@ function run_build_script(build_script, context)
 
 		return wrap_config(t or {})
 	end
+
+	-- Lua libraries (be careful with which are whitelisted)
+	env.table = table
+	env.string = string
+
+	-- Prefix / variable functions
+	env.S = prefixS
+	env.B = prefixB
+	env.E = prefixE
+	env.C = prefixC
+
+	env_stack[nil] = {
+		config = context.config,
+		environ = context.environ,
+		build_factory = make_path_factory(
+			P.abspath(context.build_dir),
+			root_build_dir_abs),
+		source_factory = make_path_factory(
+			P.abspath(context.source_dir),
+			root_build_dir_abs)
+	}
+
+	return env
+end
+
+local function popenv()
+	env_stack:pop()
+end
+
+local function run_build_script(build_script, context)
+	-- Make sure the build script follows the name convention
+	if select(2, P.splitext(build_script)) ~= '.oro' then
+		error('build scripts must have `.oro\' extension: ' .. tostring(build_script))
+	end
+
+	assert(not P.isabs(build_script))
+	assert(P.normalize(build_script):sub(1, 2) ~= '..')
+	assert(not P.isabs(context.source_dir))
+	assert(not P.isabs(context.build_dir))
+
+	local env = pushenv({}, context)
 
 	env.require = function(script)
 		local overrides = {}
@@ -192,7 +236,12 @@ function run_build_script(build_script, context)
 			script = script:sub(2)
 
 			-- check for `require '.'`
+			-- TODO this is a really shoddy and weak check (e.g. require[[./]]
+			--      would bypass it). There needs to be a check with the resolved
+			--      script to make sure it's not the currently running script.
 			assert(#script > 0, 'cannot `require\' the current directory: .')
+
+			-- TODO Normalize and make sure that it doesn't traverse upward.
 
 			-- resolve build path
 			local search_path = (
@@ -230,33 +279,36 @@ function run_build_script(build_script, context)
 			return run_build_script(discovered, context)
 		else
 			-- Library import
-			error 'fixme! library imports not yet implemented'
+
+			-- resolve build path
+			local search_path = (
+				P.normalize(P.join(Oro.root_dir, 'lib/?.lua'))
+				.. ';' .. P.normalize(P.join(Oro.root_dir, 'lib/?/_.lua'))
+			)
+
+			local discovered, attempted = package.searchpath(
+				script,
+				search_path
+			)
+
+			if discovered == nil then
+				error(
+					'`require\'d standard library path not found: ' .. original_script
+					.. '\n\n' .. attempted
+				)
+			end
+
+			discovered = P.normalize(discovered)
+
+			-- execute directly
+			local libG = pushenv(shallowclone(_G), context)
+			local chunk, err = loadfile(discovered, 'bt', libG)
+			assert(chunk ~= nil, err)
+			local vals = {chunk()}
+			popenv()
+			return unpack(vals)
 		end
-
 	end
-
-	-- Lua libraries (be careful with which are whitelisted)
-	env.table = table
-	env.string = string
-
-	-- Build-related functions
-	env.Rule = make_rule_factory(on_ninja_rule, on_ninja_build)
-	env.S = make_path_factory(
-		P.abspath(context.source_dir),
-		root_build_dir_abs
-	)
-	env.B = make_path_factory(
-		P.abspath(context.build_dir),
-		root_build_dir_abs
-	)
-
-	-- Extra utilities
-	env.print = oro_print
-	env.Set = Set
-	env.List = List
-	env.execute_immediately = Oro.execute
-	env.E = context.environ
-	env.C = context.config
 
 	-- Append the build script as a dependency
 	config_deps[nil] = relpath(
@@ -268,7 +320,9 @@ function run_build_script(build_script, context)
 	local chunk, err = loadfile(build_script, 'bt', env)
 	assert(chunk ~= nil, err)
 
-	return chunk()
+	local vals = {chunk()}
+	popenv()
+	return unpack(vals)
 end
 
 -- Run main build script
