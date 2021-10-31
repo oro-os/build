@@ -49,24 +49,34 @@ local isinstance = util.isinstance
 local shallowclone = util.shallowclone
 local relpath = make_path_factory.relpath
 
+local env_stack = List()
+
 -- Specialized output function
 -- (prefixes the calling file's name)
 local had_config_output = false
-local function oro_print(...)
-	if not had_config_output then io.stderr:write('\n') end
-	had_config_output = true
+local function make_oro_print(source_override)
+	local function oro_print(...)
+		if not had_config_output then io.stderr:write('\n') end
+		had_config_output = true
 
-	local info = debug.getinfo(2, 'S')
-	local source = info.source:sub(2)
-	io.stderr:write('-- ')
-	io.stderr:write(source)
-	io.stderr:write(':')
-	for i = 1, select('#', ...) do
-		local x = select(i, ...)
-		io.stderr:write(' ')
-		io.stderr:write(tostring(x))
+		local source = source_override
+		if source == nil then
+			local info = debug.getinfo(2, 'S')
+			source = info.source:sub(2)
+		end
+
+		io.stderr:write('-- ')
+		io.stderr:write(source)
+		io.stderr:write(':')
+		for i = 1, select('#', ...) do
+			local x = select(i, ...)
+			io.stderr:write(' ')
+			io.stderr:write(tostring(x))
+		end
+		io.stderr:write('\n')
 	end
-	io.stderr:write('\n')
+
+	return oro_print
 end
 
 local rule_cursor = 1
@@ -113,14 +123,12 @@ local config_deps = List{ '.oro-build' }
 
 local root_build_dir_abs = P.abspath(Oro.bin_dir)
 
-local env_stack = List()
-
 local function prefixC(...) return env_stack[#env_stack].config(...) end
 local function prefixE(...) return env_stack[#env_stack].environ(...) end
 local function prefixS(...) return env_stack[#env_stack].source_factory(...) end
 local function prefixB(...) return env_stack[#env_stack].build_factory(...) end
 
-local function pushenv(env, context)
+local function pushenv(env, context, name)
 	-- Lua builtins
 	env.assert = assert
 	env.ipairs = ipairs
@@ -139,7 +147,7 @@ local function pushenv(env, context)
 	env.tostring = tostring
 	env.type = type
 
-	env.print = oro_print
+	env.print = make_oro_print(name)
 	env.Set = Set
 	env.List = List
 	env.execute_immediately = Oro.execute
@@ -301,7 +309,7 @@ local function run_build_script(build_script, context)
 			discovered = P.normalize(discovered)
 
 			-- execute directly
-			local libG = pushenv(shallowclone(_G), context)
+			local libG = pushenv(shallowclone(_G), context, script)
 			local chunk, err = loadfile(discovered, 'bt', libG)
 			assert(chunk ~= nil, err)
 			local vals = {chunk()}
