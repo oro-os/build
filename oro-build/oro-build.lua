@@ -334,33 +334,40 @@ local function run_build_script(build_script, context)
 				)
 			end
 
+			local internal_require = nil
+
 			-- resolve build path
-			local search_path = (
-				P.normalize(P.join(Oro.root_dir, 'lib/?.lua'))
-				.. ';' .. P.normalize(P.join(Oro.root_dir, 'lib/?/_.lua'))
-			)
-
-			local discovered, attempted = package.searchpath(
-				script,
-				search_path
-			)
-
-			if discovered == nil then
-				error(
-					'`require\'d standard library path not found: ' .. original_script
-					.. '\n\n' .. attempted
+			internal_require = function(script)
+				local search_path = (
+					P.normalize(P.join(Oro.root_dir, 'lib/?.lua'))
+					.. ';' .. P.normalize(P.join(Oro.root_dir, 'lib/?/_.lua'))
 				)
+
+				local discovered, attempted = package.searchpath(
+					script,
+					search_path
+				)
+
+				if discovered == nil then
+					error(
+						'`require\'d standard library path not found: ' .. original_script
+						.. '\n\n' .. attempted
+					)
+				end
+
+				discovered = P.normalize(discovered)
+
+				-- execute directly
+				local libG = pushenv(shallowclone(_G), context, script)
+				libG.require = internal_require
+				local chunk, err = loadfile(discovered, 'bt', libG)
+				assert(chunk ~= nil, err)
+				local vals = {chunk()}
+				popenv()
+				return unpack(vals)
 			end
 
-			discovered = P.normalize(discovered)
-
-			-- execute directly
-			local libG = pushenv(shallowclone(_G), context, script)
-			local chunk, err = loadfile(discovered, 'bt', libG)
-			assert(chunk ~= nil, err)
-			local vals = {chunk()}
-			popenv()
-			return unpack(vals)
+			return internal_require(script)
 		end
 	end
 
