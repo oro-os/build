@@ -93,7 +93,19 @@ end
 
 local rule_cursor = 1
 local function make_rule_factory(on_rule, on_entry)
-	local function Rule(rule_opts)
+	local Rule = {}
+	local make_rule = nil
+
+	function Rule:clone()
+		local opts = {}
+		for k, v in pairs(self) do
+			opts[k] = v
+		end
+
+		return make_rule(opts)
+	end
+
+	make_rule = function(rule_opts)
 		assert(type(rule_opts) == 'table', 'rule options must be a table')
 		assert(rule_opts.command ~= nil, 'Rule() options must include `command` field')
 
@@ -102,7 +114,7 @@ local function make_rule_factory(on_rule, on_entry)
 
 		on_rule(name, rule_opts)
 
-		return function(entry_opts)
+		local function make_build(_, entry_opts)
 			assert(type(entry_opts) == 'table', 'build options must be a table')
 			assert(entry_opts.out ~= nil, 'build options must include `out` field')
 
@@ -110,10 +122,18 @@ local function make_rule_factory(on_rule, on_entry)
 
 			return entry_opts.out
 		end
+
+		return setmetatable(
+			rule_opts,
+			{
+				__index = Rule,
+				__call = make_build
+			}
+		)
 	end
 
 	return tablefunc(
-		Rule,
+		make_rule,
 		{
 			escape = escape_ninja,
 			escapeall = escape_ninja_all
@@ -305,6 +325,14 @@ local function run_build_script(build_script, context)
 			return run_build_script(discovered, context)
 		else
 			-- Library import
+
+			-- disallow internal imports
+			if script:find('%._') ~= nil then
+				error(
+					'`require\'d standard library path not allowed (`_\' prefix indicates internal module): '
+					.. script
+				)
+			end
 
 			-- resolve build path
 			local search_path = (

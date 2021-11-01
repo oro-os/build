@@ -43,7 +43,7 @@ local function configure_compiler(compiler_command, skip_prelude)
 		print('\n    WARNING: could not detect compiler variant (falling back to GCC-like)')
 	end
 
-	local variant = require ('lib.cc.variant.'..use_variant)
+	local variant = require ('lib.cc._variant.'..use_variant)
 	assert(variant ~= nil)
 
 	local rule = Rule {
