@@ -9,13 +9,13 @@
 
 --
 -- Flat array iterator with special
--- handling for paths
+-- handling for "nuclear" objects
+-- (tables with __name MT entries)
 --
 
 local util = require 'internal.util'
-local Path = (require 'internal.path').Path
 
-local isinstance = util.isinstance
+local isnuclear = util.isnuclear
 
 local function flat(t)
 	local stack = {{t, 1}}
@@ -39,10 +39,9 @@ local function flat(t)
 		end
 
 		while type(v) == 'table' do
-			-- Special handling for Path objects
-			if isinstance(v, Path) then
-				break
-			end
+			-- Special handling for "nuclear" objects
+			-- (those with a __name MT entry)
+			if isnuclear(v) then break end
 
 			itr = {v, 1}
 			local nv = iter(itr)

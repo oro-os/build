@@ -184,7 +184,7 @@ function Ninja:add_build(rule_name, opts)
 		if v == nil then return end
 
 		if isinstance(v, Path) then
-			v = tostring(v)
+			v = {tostring(v)}
 		end
 
 		if type(v) == 'string' then

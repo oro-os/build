@@ -394,7 +394,7 @@ local function run_build_script(build_script, context)
 end
 
 -- Run main build script
-local exports = run_build_script(
+local exports = {run_build_script(
 	Oro.build_script,
 	{
 		source_dir = P.dirname(Oro.build_script),
@@ -402,11 +402,14 @@ local exports = run_build_script(
 		config = wrap_config(raw_config),
 		environ = wrap_environ(Oro.env)
 	}
-)
+)}
 
 -- Add all returned targets as ninja defaults
-if exports ~= nil then
-	for output in flat(exports) do
+for output in flat(exports) do
+	if (
+		isinstance(output, make_path_factory.Path)
+		or type(output) == 'string'
+	) then
 		ninja:add_default(output)
 	end
 end

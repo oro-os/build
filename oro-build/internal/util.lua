@@ -23,6 +23,11 @@ local function isinstance(v, meta)
 	return mt ~= nil and mt.__index == meta
 end
 
+local function isnuclear(v)
+	local meta = getmetatable(v)
+	return meta ~= nil and meta.__name ~= nil
+end
+
 local ListType = {}
 
 function ListType:pop()
@@ -75,6 +80,7 @@ end
 return {
 	Set = Set,
 	isinstance = isinstance,
+	isnuclear = isnuclear,
 	unpack = unpack,
 	List = List,
 	tablefunc = tablefunc,

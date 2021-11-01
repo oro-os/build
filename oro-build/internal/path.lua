@@ -13,21 +13,14 @@
 --
 
 local util = require 'internal.util'
-
--- Solves a cyclic dependency between path and flat.
-local flat_ = nil
-local function flat(...)
-	if flat_ == nil then
-		flat_ = require 'internal.flat'
-	end
-	return flat_(...)
-end
+local flat = require 'internal.flat'
 
 local unpack = util.unpack
 local tablefunc = util.tablefunc
 local isinstance = util.isinstance
 
 local Path = {}
+local Path__mt = nil
 
 local function pathstring(x, allow_base)
 	-- TODO we kind of naively assume that a function
@@ -45,7 +38,7 @@ function Path:path(s)
 	else
 		return setmetatable(
 			{ _path = pathstring(s), _base = self._base },
-			{ __index = Path, __tostring = Path__tostring }
+			Path__mt
 		)
 	end
 end
@@ -56,7 +49,7 @@ function Path:base(s)
 	else
 		return setmetatable(
 			{ _path = self._path, _base = pathstring(s, true) },
-			{ __index = Path, __tostring = Path__tostring }
+			Path__mt
 		)
 	end
 end
@@ -189,10 +182,7 @@ local function make_path_factory(source_root, build_root)
 				_path = path,
 				_base = base,
 			},
-			{
-				__index = Path,
-				__tostring = Path__tostring
-			}
+			Path__mt
 		)
 	end
 
@@ -212,6 +202,12 @@ local function make_path_factory(source_root, build_root)
 		end
 	end
 end
+
+Path__mt = {
+	__index = Path,
+	__name = 'Path', -- required to make object "nuclear"
+	__tostring = Path__tostring
+}
 
 return tablefunc(
 	make_path_factory,
