@@ -14,6 +14,15 @@
 
 local util = require 'internal.util'
 
+-- Solves a cyclic dependency between path and flat.
+local flat_ = nil
+local function flat(...)
+	if flat_ == nil then
+		flat_ = require 'internal.flat'
+	end
+	return flat_(...)
+end
+
 local unpack = util.unpack
 local tablefunc = util.tablefunc
 local isinstance = util.isinstance
@@ -62,6 +71,22 @@ function Path:ext(s)
 		return ext
 	else
 		return self:path(base .. s)
+	end
+end
+
+function Path:join(pth)
+	if isinstance(pth, Path) then
+		return self:path(Oro.path.join(self._path, pth._path))
+	elseif type(pth) == 'string' or type(pth) == 'number' then
+		return self:path(Oro.path.join(self._path, tostring(pth)))
+	elseif type(pth) == 'table' then
+		local cur = self
+		for segment in flat(pth) do
+			cur = cur:join(segment)
+		end
+		return cur
+	else
+		error('Path:join(path): path must either be a string, number or another Path instance: ' .. tostring(pth))
 	end
 end
 
