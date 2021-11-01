@@ -77,7 +77,7 @@ local function detect_default_compiler()
 	end
 
 	for _, v in ipairs(to_test) do
-		resolved = Oro.search_path(v, E'PATH')
+		resolved = Oro.search_path(v, path)
 		if resolved ~= nil then
 			break
 		end
