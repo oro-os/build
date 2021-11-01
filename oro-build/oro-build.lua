@@ -404,8 +404,10 @@ local exports = run_build_script(
 )
 
 -- Add all returned targets as ninja defaults
-for output in flat(exports) do
-	ninja:add_default(output)
+if exports ~= nil then
+	for output in flat(exports) do
+		ninja:add_default(output)
+	end
 end
 
 if not ninja:has_defaults() then
