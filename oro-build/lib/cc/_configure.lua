@@ -60,7 +60,8 @@ local function configure_compiler(compiler_command, skip_prelude)
 	return {
 		rule = rule,
 		variant_name = use_variant,
-		variant = variant
+		variant = variant,
+		compiler_command = compiler_command
 	}
 end
 
