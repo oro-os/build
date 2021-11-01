@@ -1,4 +1,4 @@
-local gcc_variant = require 'lib.cc.variant.gcc'
+local gcc_variant = require 'cc._variant.gcc'
 
 local clang_variant = {
 	flag_warn_everything = {'-Weverything'}
