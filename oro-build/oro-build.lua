@@ -189,6 +189,7 @@ local function pushenv(env, context, name)
 	env.Set = Set
 	env.List = List
 	env.execute_immediately = Oro.execute
+	env.flat = flat
 
 	env.Rule = make_rule_factory(on_ninja_rule, on_ninja_build)
 
