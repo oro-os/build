@@ -49,7 +49,6 @@ local function configure_compiler(compiler_command, skip_prelude)
 	local rule = Rule {
 		command = {
 			compiler_command_args,
-			variant.flag_compile_object,
 			variant.flag_output('$out'),
 			'$cflags',
 			'$in'
@@ -117,6 +116,8 @@ local function cc_builder(_, opts)
 
 	local cflags = List(opts.cflags)
 	local out = List()
+
+	cflags[nil] = compiler.variant.flag_compile_object
 
 	if not opts.noforce then
 		cflags[nil] = compiler.variant.flag_force_c
