@@ -33,7 +33,7 @@ local function cc_builder(_, opts)
 	end
 
 	for i, v in ipairs(opts) do
-		local outfile = B(v):ext('.o', true)
+		local outfile = B(v):append('.o')
 		out[nil] = outfile
 		compiler.rule {
 			In = v,

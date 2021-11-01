@@ -56,12 +56,11 @@ function Path:append(s)
 	return self:path(self._path .. pathstring(s))
 end
 
-function Path:ext(s, append)
+function Path:ext(s)
 	local base, ext = Oro.path.splitext(self._path)
 	if s == nil then
 		return ext
 	else
-		if append then s = ext .. s end
 		return self:path(base .. s)
 	end
 end
