@@ -364,7 +364,7 @@ local function run_build_script(build_script, context)
 				discovered = P.normalize(discovered)
 
 				-- execute directly
-				local libG = pushenv(shallowclone(_G), context, script)
+				local libG = pushenv(shallowclone(_G), context, script:gsub('%._', '.'))
 				libG.require = internal_require
 				local chunk, err = loadfile(discovered, 'bt', libG)
 				assert(chunk ~= nil, err)
