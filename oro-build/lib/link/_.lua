@@ -26,12 +26,32 @@ local function link_exe_builder(opts)
 		exe_linker = new_linker
 	end
 
-	local ldflags = List(opts.ldflags)
+	local cflags = List(opts.ldflags)
+
+	local release = opts.release
+	local release_fast = false
+	if release == nil then
+		release = C'RELEASE'
+		release_fast = opts.fast or tostring(release) == 'fast'
+		release = release ~= nil and tostring(release) ~= '0'
+	end
+
+	if release then
+		cflags[nil] = exe_linker.variant.ldflag_release
+
+		if release_fast then
+			cflags[nil] = exe_linker.variant.flag_release_fase
+		else
+			cflags[nil] = exe_linker.variant.flag_release
+		end
+	elseif not opts.nodebug then
+		cflags[nil] = exe_linker.variant.flag_debug
+	end
 
 	return exe_linker.rule {
 		In = opts,
 		out = opts.out,
-		cflags = ldflags
+		cflags = cflags
 	}
 end
 

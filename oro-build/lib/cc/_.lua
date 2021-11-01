@@ -12,6 +12,24 @@ local function cc_builder(_, opts)
 		cflags[nil] = compiler.variant.flag_force_c
 	end
 
+	local release = opts.release
+	local release_fast = false
+	if release == nil then
+		release = C'RELEASE'
+		release_fast = opts.fast or tostring(release) == 'fast'
+		release = release ~= nil and tostring(release) ~= '0'
+	end
+
+	if release then
+		if release_fast then
+			cflags[nil] = compiler.variant.flag_release_fast
+		else
+			cflags[nil] = compiler.variant.flag_release
+		end
+	elseif not opts.nodebug then
+		cflags[nil] = compiler.variant.flag_debug
+	end
+
 	if opts.werror then cflags[nil] = compiler.variant.flag_warn_error end
 
 	if opts.warn ~= nil then
