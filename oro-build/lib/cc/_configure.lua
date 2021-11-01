@@ -1,3 +1,18 @@
+--  __   __   __
+-- /  \ |__) /  \
+-- \__/ |  \ \__/
+--
+-- ORO BUILD GENERATOR
+-- Copyright (c) 2021, Josh Junon
+-- License TBD
+--
+
+--
+-- Common CC compiler configurator, used by
+-- most tools that work with the C/C++ compilers
+-- on a system.
+--
+
 local DEFAULT_COMPILER = {} -- marker table, used as a key
 local rule_cache = {}
 

@@ -1,3 +1,16 @@
+--  __   __   __
+-- /  \ |__) /  \
+-- \__/ |  \ \__/
+--
+-- ORO BUILD GENERATOR
+-- Copyright (c) 2021, Josh Junon
+-- License TBD
+--
+
+--
+-- GCC C/C++ compiler variant information
+--
+
 local gcc_variant = {
 	flag_compile_object = '-c',
 	flag_force_c = '-xc',

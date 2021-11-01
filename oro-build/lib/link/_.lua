@@ -1,3 +1,16 @@
+--  __   __   __
+-- /  \ |__) /  \
+-- \__/ |  \ \__/
+--
+-- ORO BUILD GENERATOR
+-- Copyright (c) 2021, Josh Junon
+-- License TBD
+--
+
+--
+-- Default system linker configurator
+--
+
 local configure_cc = require 'cc._configure'
 
 local DEFAULT_COMPILER = {}

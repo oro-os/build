@@ -1,3 +1,17 @@
+ /*
+	 __   __   __
+	/  \ |__) /  \
+	\__/ |  \ \__/
+
+	ORO BUILD GENERATOR
+	Copyright (c) 2021, Josh Junon
+	License TBD
+*/
+
+/*
+	Lua environment C support runtime
+*/
+
 #include "./ext/lua/onelua.c"
 #include "./ext/luafilesystem/src/lfs.c"
 

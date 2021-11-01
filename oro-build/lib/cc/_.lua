@@ -1,3 +1,16 @@
+--  __   __   __
+-- /  \ |__) /  \
+-- \__/ |  \ \__/
+--
+-- ORO BUILD GENERATOR
+-- Copyright (c) 2021, Josh Junon
+-- License TBD
+--
+
+--
+-- Main CC compiler configurator and builder
+--
+
 local configure = require 'cc._configure'
 
 local function cc_builder(_, opts)

@@ -1,3 +1,17 @@
+--  __   __   __
+-- /  \ |__) /  \
+-- \__/ |  \ \__/
+--
+-- ORO BUILD GENERATOR
+-- Copyright (c) 2021, Josh Junon
+-- License TBD
+--
+
+--
+-- Clang C/C++ compiler variant information,
+-- based primarily on the GCC compiler variant
+--
+
 local gcc_variant = require 'cc._variant.gcc'
 
 local clang_variant = {
