@@ -228,6 +228,8 @@ local function popenv()
 	env_stack:pop()
 end
 
+local require_cache = {}
+
 local function run_build_script(build_script, context)
 	-- Make sure the build script follows the name convention
 	if select(2, P.splitext(build_script)) ~= '.oro' then
@@ -338,6 +340,9 @@ local function run_build_script(build_script, context)
 
 			-- resolve build path
 			internal_require = function(script)
+				local cached = require_cache[script]
+				if cached ~= nil then return unpack(cached) end
+
 				local search_path = (
 					P.normalize(P.join(Oro.root_dir, 'lib/?.lua'))
 					.. ';' .. P.normalize(P.join(Oro.root_dir, 'lib/?/_.lua'))
@@ -364,6 +369,7 @@ local function run_build_script(build_script, context)
 				assert(chunk ~= nil, err)
 				local vals = {chunk()}
 				popenv()
+				require_cache[script] = vals
 				return unpack(vals)
 			end
 
