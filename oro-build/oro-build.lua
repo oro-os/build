@@ -433,6 +433,17 @@ ninja:add_build('_oro_build_regenerator', {
 	In = config_deps
 })
 
+-- Add compilation database generation rule.
+ninja:add_rule('_oro_build_compdb', {
+	command = { 'ninja', '-t', 'compdb', '>', '$out' },
+	description = 'COMPDB $out'
+})
+
+ninja:add_build('_oro_build_compdb', {
+	in_implicit = 'build.ninja',
+	out = ninja:add_default('compile_commands.json')
+})
+
 -- Dump Ninja file to build directory
 local ostream = io.open(ninja_out, 'wb')
 ninja:write(ostream)
