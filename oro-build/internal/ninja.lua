@@ -32,7 +32,7 @@ local ninja_rule_keys = Set {
 function Ninja:write(to_stream)
 	to_stream:write('#\n# THIS IS A GENERATED BUILD CONFIGURATION')
 	to_stream:write('\n# DO NOT MANUALLY EDIT!\n#')
-	to_stream:write('\nninja_required_version = 1.1')
+	to_stream:write('\n\nninja_required_version = 1.1')
 
 	-- NOTE: this emits the initial ' ' if a value is found.
 	local function escape(v, colon)
