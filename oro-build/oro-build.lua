@@ -177,9 +177,30 @@ local ninja = Ninjafile()
 local function on_ninja_rule(rule_name, opts) ninja:add_rule(rule_name, opts) end
 local function on_ninja_build(rule_name, opts) ninja:add_build(rule_name, opts) end
 
-local config_deps = List{ '.oro-build' }
+local function internal_build_path(pth)
+	return P.normalize(
+		relpath(
+			P.abspath(Oro.bin_dir),
+			P.abspath(pth)
+		)
+	)
+end
 
-local root_build_dir_abs = P.abspath(Oro.bin_dir)
+local function internal_build_root_path(pth)
+	return internal_build_path(P.join(Oro.root_dir, pth))
+end
+
+local config_deps = List{
+	'.oro-build',
+	internal_build_root_path 'oro-build.c',
+	internal_build_root_path 'oro-build.lua',
+	internal_build_root_path 'internal/config.lua',
+	internal_build_root_path 'internal/environ.lua',
+	internal_build_root_path 'internal/flat.lua',
+	internal_build_root_path 'internal/ninja.lua',
+	internal_build_root_path 'internal/path.lua',
+	internal_build_root_path 'internal/util.lua'
+}
 
 local envstack_getters = {
 	C = 'config',
@@ -242,10 +263,10 @@ local function pushenv(env, context, name)
 		environ = context.environ,
 		build_factory = make_path_factory(
 			P.abspath(context.build_dir),
-			root_build_dir_abs),
+			P.abspath(Oro.bin_dir)),
 		source_factory = make_path_factory(
 			P.abspath(context.source_dir),
-			root_build_dir_abs)
+			P.abspath(Oro.bin_dir))
 	}
 
 	-- This should never happen.
@@ -399,6 +420,7 @@ local function run_build_script(build_script, context)
 				end
 
 				discovered = P.normalize(discovered)
+				config_deps[nil] = internal_build_path(discovered)
 
 				-- execute directly
 				local libG = pushenv(shallowclone(_G), context, script:gsub('%._', '.'))
@@ -417,7 +439,7 @@ local function run_build_script(build_script, context)
 
 	-- Append the build script as a dependency
 	config_deps[nil] = relpath(
-		root_build_dir_abs,
+		P.abspath(Oro.bin_dir),
 		P.abspath(build_script)
 	)
 
