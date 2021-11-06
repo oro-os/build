@@ -77,6 +77,27 @@ local function shallowclone(tbl)
 	return t
 end
 
+local function keys(tbl, all)
+	local t = {}
+
+	local i = 0
+	if all then
+		for k, _ in pairs(tbl) do
+			if type(k) ~= 'number' then
+				i = i + 1
+				t[i] = k
+			end
+		end
+	else
+		for k, _ in pairs(tbl) do
+			i = i + 1
+			t[i] = k
+		end
+	end
+
+	return t, i
+end
+
 return {
 	Set = Set,
 	isinstance = isinstance,
@@ -84,5 +105,6 @@ return {
 	unpack = unpack,
 	List = List,
 	tablefunc = tablefunc,
-	shallowclone = shallowclone
+	shallowclone = shallowclone,
+	keys = keys
 }

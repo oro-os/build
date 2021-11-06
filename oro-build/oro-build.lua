@@ -58,6 +58,9 @@ local relpath = make_path_factory.relpath
 --       any side effects.
 string.split = Oro.split
 table.flat = flat
+table.keys = util.keys
+table.shallowclone = shallowclone
+table.unpack = unpack -- just to be sure.
 
 -- The env stack is used by the prefix functions
 -- instead of creating new prefix functions for
