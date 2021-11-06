@@ -48,6 +48,7 @@ local unpack = util.unpack
 local isinstance = util.isinstance
 local shallowclone = util.shallowclone
 local tablefunc = util.tablefunc
+local isnuclear = util.isnuclear
 local relpath = make_path_factory.relpath
 
 -- Standard library extensions
@@ -204,7 +205,10 @@ local function pushenv(env, context, name)
 	env.select = select
 	env.tonumber = tonumber
 	env.tostring = tostring
-	env.type = type
+	env.type = tablefunc(
+		type,
+		{ isnuclear = isnuclear }
+	)
 
 	-- Generic utilities
 	env.print = make_oro_print(name)
