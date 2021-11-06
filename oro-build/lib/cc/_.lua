@@ -17,7 +17,6 @@ local function cc_builder(_, opts)
 	local compiler = configure()
 
 	local cflags = List(opts.cflags)
-	local out = List()
 
 	cflags[nil] = compiler.variant.flag_compile_object
 
@@ -63,17 +62,43 @@ local function cc_builder(_, opts)
 		end
 	end
 
-	for v in table.flat(opts) do
-		local outfile = B(v):append('.o')
-		out[nil] = outfile
-		compiler.rule {
-			In = v,
-			out = {outfile},
+	if opts.out then
+		if type(opts.out) == 'table' then
+			if (
+				not type.isnuclear(opts.out)
+				and #opts.out ~= 1
+			) then
+				error(
+					'optional `out` parameter for \'cc\' must have exactly 1 item; got '
+					.. tostring(#opts.out)
+				)
+			end
+		elseif type(opts.out) ~= 'string' then
+			error(
+				'optional `out` parameter for \'cc\' must either be a string, table, or path; got '
+				.. type(opts.out)
+			)
+		end
+
+		return compiler.rule {
+			In = opts,
+			out = {opts.out},
 			cflags = cflags
 		}
-	end
+	else
+		local out = List()
+		for v in table.flat(opts) do
+			local outfile = B(v):append('.o')
+			out[nil] = outfile
+			compiler.rule {
+				In = v,
+				out = {outfile},
+				cflags = cflags
+			}
+		end
 
-	return out
+		return out
+	end
 end
 
 local function switch_variant(tbl)
