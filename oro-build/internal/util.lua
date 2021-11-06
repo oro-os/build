@@ -98,6 +98,14 @@ local function keys(tbl, all)
 	return t, i
 end
 
+local function lpad(str, len, chr)
+	return string.rep(chr or ' ', len - #str) .. str
+end
+
+local function rpad(str, len, chr)
+	return str .. string.rep(chr or ' ', len - #str)
+end
+
 return {
 	Set = Set,
 	isinstance = isinstance,
@@ -106,5 +114,7 @@ return {
 	List = List,
 	tablefunc = tablefunc,
 	shallowclone = shallowclone,
-	keys = keys
+	keys = keys,
+	lpad = lpad,
+	rpad = rpad
 }

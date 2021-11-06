@@ -57,6 +57,8 @@ local relpath = make_path_factory.relpath
 --       breaking out of the sandbox or have
 --       any side effects.
 string.split = Oro.split
+string.lpad = util.lpad
+string.rpad = util.rpad
 table.flat = flat
 table.keys = util.keys
 table.shallowclone = shallowclone
