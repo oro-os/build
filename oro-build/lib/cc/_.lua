@@ -63,7 +63,7 @@ local function cc_builder(_, opts)
 		end
 	end
 
-	for i, v in ipairs(opts) do
+	for v in table.flat(opts) do
 		local outfile = B(v):append('.o')
 		out[nil] = outfile
 		compiler.rule {

@@ -18,6 +18,8 @@ local flat = require 'internal.flat'
 local unpack = util.unpack
 local tablefunc = util.tablefunc
 local isinstance = util.isinstance
+local List = util.List
+local flat = util.flat
 
 local Path = {}
 local Path__mt = nil
@@ -192,9 +194,9 @@ local function make_path_factory(source_root, build_root)
 		elseif isinstance(path, Path) then
 			return inner(path._path)
 		elseif type(path) == 'table' then
-			local nt = {}
-			for i = 1, #path do
-				nt[i] = inner(path[i])
+			local nt = List()
+			for pth in flat(path) do
+				nt[nil] = inner(pth)
 			end
 			return nt;
 		else
