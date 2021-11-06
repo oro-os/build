@@ -37,4 +37,12 @@ function gcc_variant.flag_warn(name)
 	return '-W' .. tostring(name)
 end
 
+function gcc_variant.flag_define(name, value)
+	if value == nil then
+		return '-D' .. tostring(name)
+	else
+		return '-D' .. tostring(name) .. '=' .. tostring(value)
+	end
+end
+
 return gcc_variant

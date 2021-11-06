@@ -68,6 +68,28 @@ local function cc_builder(_, opts)
 		end
 	end
 
+	if opts.define then
+		if type(opts.define) ~= 'table' then
+			error(
+				'`define` parameter must be a table; got '
+				.. type(opts.define)
+			)
+		end
+
+		for k, v in pairs(opts.define) do
+			if type(k) == 'number' then
+				cflags[nil] = compiler.variant.flag_define(v)
+			elseif type(k) == 'string' then
+				cflags[nil] = compiler.variant.flag_define(k, v)
+			else
+				error(
+					'invalid `define` key (must be either string or number): ',
+					type(k)
+				)
+			end
+		end
+	end
+
 	if opts.out then
 		if type(opts.out) == 'table' then
 			if (
