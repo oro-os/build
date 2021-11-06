@@ -50,6 +50,20 @@ local shallowclone = util.shallowclone
 local tablefunc = util.tablefunc
 local relpath = make_path_factory.relpath
 
+-- Standard library extensions
+-- NOTE: These extensions might be exposed to
+--       user scripts, depending on the library
+--       Make sure the functions don't allow
+--       breaking out of the sandbox or have
+--       any side effects.
+string.split = Oro.split
+table.flat = flat
+
+-- The env stack is used by the prefix functions
+-- instead of creating new prefix functions for
+-- each environment. This allows cached scripts
+-- to have functions called in various contexts
+-- without needing to be re-initialized each time.
 local env_stack = List()
 
 -- Specialized output function
@@ -185,12 +199,13 @@ local function pushenv(env, context, name)
 	env.tostring = tostring
 	env.type = type
 
+	-- Generic utilities
 	env.print = make_oro_print(name)
 	env.Set = Set
 	env.List = List
 	env.execute_immediately = Oro.execute
-	env.flat = flat
 
+	-- Build config facilities
 	env.Rule = make_rule_factory(on_ninja_rule, on_ninja_build)
 
 	env.Config = function (t)
@@ -201,15 +216,15 @@ local function pushenv(env, context, name)
 		return wrap_config(t or {})
 	end
 
-	-- Lua libraries (be careful with which are whitelisted)
-	env.table = table
-	env.string = string
-
 	-- Prefix / variable functions
 	env.S = prefixS
 	env.B = prefixB
 	env.E = prefixE
 	env.C = prefixC
+
+	-- Lua libraries (be careful with which are whitelisted)
+	env.table = table
+	env.string = string
 
 	env_stack[nil] = {
 		config = context.config,
