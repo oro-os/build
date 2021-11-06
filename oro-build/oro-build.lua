@@ -180,10 +180,12 @@ local config_deps = List{ '.oro-build' }
 
 local root_build_dir_abs = P.abspath(Oro.bin_dir)
 
-local function prefixC(...) return env_stack[#env_stack].config(...) end
-local function prefixE(...) return env_stack[#env_stack].environ(...) end
-local function prefixS(...) return env_stack[#env_stack].source_factory(...) end
-local function prefixB(...) return env_stack[#env_stack].build_factory(...) end
+local envstack_getters = {
+	C = 'config',
+	E = 'environ',
+	S = 'source_factory',
+	B = 'build_factory'
+}
 
 local function pushenv(env, context, name)
 	-- Lua builtins
@@ -242,7 +244,16 @@ local function pushenv(env, context, name)
 			root_build_dir_abs)
 	}
 
-	return env
+	-- This should never happen.
+	assert(getmetatable(env) == nil, 'cowardly refusing to overwrite env metatable')
+
+	-- Create env-stack proxy for prefix functions
+	return setmetatable(env, {
+		__index = function(_, k)
+			local getter = envstack_getters[k]
+			return getter and env_stack[#env_stack][getter] or nil
+		end
+	})
 end
 
 local function popenv()
