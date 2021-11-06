@@ -429,15 +429,17 @@ local function run_build_script(build_script, context)
 end
 
 -- Run main build script
-local exports = {run_build_script(
-	Oro.build_script,
-	{
-		source_dir = P.dirname(Oro.build_script),
-		build_dir = Oro.bin_dir,
-		config = wrap_config(raw_config),
-		environ = wrap_environ(Oro.env)
-	}
-)}
+local exports = {
+	run_build_script(
+		Oro.build_script,
+		{
+			source_dir = P.dirname(Oro.build_script),
+			build_dir = Oro.bin_dir,
+			config = wrap_config(raw_config),
+			environ = wrap_environ(Oro.env)
+		}
+	)
+}
 
 -- Add all returned targets as ninja defaults
 for output in flat(exports) do
