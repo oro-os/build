@@ -41,7 +41,7 @@ local function flat(t)
 		while type(v) == 'table' do
 			-- Special handling for "nuclear" objects
 			-- (those with a __name MT entry)
-			if isnuclear(v) then break end
+			if #v == 0 or isnuclear(v) then break end
 
 			itr = {v, 1}
 			local nv = iter(itr)
