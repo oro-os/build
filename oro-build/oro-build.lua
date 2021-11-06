@@ -326,6 +326,8 @@ local function run_build_script(build_script, context)
 			assert(#script > 0, 'cannot `require\' the current directory: .')
 
 			-- TODO Normalize and make sure that it doesn't traverse upward.
+			-- TODO (this might need a realpath() call due to rascals trying
+			-- TODO to symlink)
 
 			-- resolve build path
 			local search_path = (
