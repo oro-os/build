@@ -24,6 +24,12 @@ local function cc_builder(_, opts)
 		cflags[nil] = compiler.variant.flag_force_c
 	end
 
+	if opts.preprocess_only == 'nodebug' then
+		cflags[nil] = compiler.variant.flag_preprocess_only_nodebug
+	elseif opts.preprocess_only then
+		cflags[nil] = compiler.variant.flag_preprocess_only
+	end
+
 	local release = opts.release
 	local release_fast = false
 	if release == nil then

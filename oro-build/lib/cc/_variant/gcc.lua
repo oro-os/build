@@ -23,6 +23,8 @@ local gcc_variant = {
 	flag_debug = {'-g3', '-O0'},
 	flag_release = {'-g0', '-O3', '-DNDEBUG'},
 	flag_release_fast = {'-g0', '-O3', '-ffast-math', '-DNDEBUG'},
+	flag_preprocess_only = '-E',
+	flag_preprocess_only_nodebug = {'-E', '-P'},
 
 	ldflag_release = '-s'
 }
