@@ -202,13 +202,11 @@ function Ninja:add_build(rule_name, opts)
 		opts[k] = t
 	end
 
-	if opts then
-		sanitize_key('out')
-		sanitize_key('out_implicit')
-		sanitize_key('in')
-		sanitize_key('in_implicit')
-		sanitize_key('in_order')
-	end
+	sanitize_key('out')
+	sanitize_key('out_implicit')
+	sanitize_key('in')
+	sanitize_key('in_implicit')
+	sanitize_key('in_order')
 
 	assert(self.rules[rule_name] ~= nil, 'unknown rule: ' .. rule_name)
 	assert(type(opts.out) == 'table', 'missing required option `out`, or it is not a table')
