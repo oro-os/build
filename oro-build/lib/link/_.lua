@@ -8,7 +8,8 @@
 --
 
 --
--- Default system linker configurator
+-- System linker configuration (e.g. for COFF objects,
+-- native executables, etc.)
 --
 
 local configure_cc = require 'cc._configure'
@@ -30,7 +31,7 @@ local function link_exe_builder(opts)
 
 		new_linker.rule = new_linker.rule:clone()
 		new_linker.rule.description = (
-			'LINK('
+			'LINK EXE('
 			.. Rule.escapeall(new_linker.compiler_command)
 			.. ') $out'
 		)
@@ -68,6 +69,15 @@ local function link_exe_builder(opts)
 	}
 end
 
-return {
-	exe = link_exe_builder
-}
+local function misuse_catch()
+	error[[link{} can't be used directly; use link.exe{} instead]]
+end
+
+return setmetatable(
+	{
+		exe = link_exe_builder
+	},
+	{
+		__call = misuse_catch
+	}
+)
