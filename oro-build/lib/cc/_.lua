@@ -119,7 +119,7 @@ local function cc_builder(_, opts)
 			local outfile = B(v):append('.o')
 			out[nil] = outfile
 			compiler.rule {
-				In = v,
+				In = {v, opts['in'] or {}, opts.In or {}},
 				out = {outfile},
 				cflags = cflags
 			}
