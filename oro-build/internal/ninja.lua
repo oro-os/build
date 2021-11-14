@@ -14,10 +14,9 @@
 
 local util = require 'internal.util'
 local flat = require 'internal.flat'
-local Path = (require 'internal.path').Path
 
 local Set = util.Set
-local isinstance = util.isinstance
+local isnuclear = util.isnuclear
 local tablefunc = util.tablefunc
 
 local Ninja = {}
@@ -42,7 +41,7 @@ function Ninja:write(to_stream)
 	end
 
 	local function emit(v)
-		if type(v) == 'table' then
+		if type(v) == 'table' and not isnuclear(v) then
 			for v in flat(v) do
 				to_stream:write(' ')
 				to_stream:write(escape(tostring(v)))
@@ -183,7 +182,7 @@ function Ninja:add_build(rule_name, opts)
 
 		if v == nil then return end
 
-		if isinstance(v, Path) then
+		if isnuclear(v) then
 			v = {tostring(v)}
 		end
 
