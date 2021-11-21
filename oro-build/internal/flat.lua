@@ -18,7 +18,7 @@ local util = require 'internal.util'
 local isnuclear = util.isnuclear
 
 local function flat(t)
-	local stack = {{t, 1}}
+	local stack = {{{t}, 1}}
 
 	local function iter(i)
 		local v = i[1][i[2]]
