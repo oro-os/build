@@ -65,6 +65,12 @@ table.keys = util.keys
 table.shallowclone = shallowclone
 table.unpack = unpack -- just to be sure.
 
+function table.flatten(t)
+	local res = List()
+	for v in flat(t) do res[nil] = v end
+	return res
+end
+
 -- The env stack is used by the prefix functions
 -- instead of creating new prefix functions for
 -- each environment. This allows cached scripts
