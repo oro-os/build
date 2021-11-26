@@ -19,7 +19,6 @@ local unpack = util.unpack
 local tablefunc = util.tablefunc
 local isinstance = util.isinstance
 local List = util.List
-local flat = util.flat
 
 local Path = {}
 local Path__mt = nil
