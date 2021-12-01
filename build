@@ -21,7 +21,7 @@ die() {
 }
 
 [ ! -z "${1-}" ] || die "do not run directly - this build script should be a part of a shebang"
-[ ! -z "${2-}" ] || die "usage: ${1-} <bin_dir>"
+[ ! -z "${2-}" ] || die "usage: ${1} <bin_dir>"
 
 THIS_SCRIPT="${0}"
 BUILD_SCRIPT="${1}"
