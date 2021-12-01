@@ -65,9 +65,11 @@ local function configure_compiler(compiler_command, skip_prelude)
 		command = {
 			compiler_command_args,
 			variant.flag_output('$out'),
+			variant.flag_dep_output('$out.d'),
 			'$cflags',
 			'$in'
 		},
+		depfile = '$out.d',
 		description = 'CC(' .. Rule.escapeall(compiler_command) .. ') $out'
 	}
 

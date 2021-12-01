@@ -33,6 +33,10 @@ function gcc_variant.flag_output(out)
 	return {'-o', out}
 end
 
+function gcc_variant.flag_dep_output(out)
+	return {'-MD', '-MF', out}
+end
+
 function gcc_variant.flag_warn(name)
 	return '-W' .. tostring(name)
 end
