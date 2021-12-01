@@ -63,7 +63,7 @@ local function link_exe_builder(opts)
 	end
 
 	return exe_linker.rule {
-		In = {opts, opts['in'] or {}, opts.In or {}},
+		opts,
 		out = opts.out,
 		cflags = cflags
 	}

@@ -142,10 +142,7 @@ local function make_rule_factory(on_rule, on_entry)
 
 		local function make_build(_, entry_opts)
 			assert(type(entry_opts) == 'table', 'build options must be a table')
-			assert(entry_opts.out ~= nil, 'build options must include `out` field')
-
 			on_entry(name, entry_opts)
-
 			return entry_opts.out
 		end
 
@@ -498,7 +495,7 @@ ninja:add_rule('_oro_build_regenerator', {
 
 ninja:add_build('_oro_build_regenerator', {
 	out = ninja:add_default('build.ninja'),
-	In = config_deps
+	config_deps
 })
 
 -- Add compilation database generation rule.

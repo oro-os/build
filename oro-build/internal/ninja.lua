@@ -74,60 +74,63 @@ function Ninja:write(to_stream)
 		-- sanity checks
 		assert(rule_name ~= nil)
 		assert(opts ~= nil)
-		assert(type(opts.out) == 'table')
-		assert(#(opts.out) > 0)
+		assert(opts['in'] == nil) -- checked in the `add_build` method
+		assert(opts['In'] == nil)
 
 		-- emit
-		-- TODO enforce that build-line paths are Path objects.
 		to_stream:write('\n\nbuild')
 		local ignore_keys = {}
 
-		for v in flat(opts.out) do
+		if opts.out ~= nil then
 			ignore_keys.out = true
-
-			to_stream:write(' ')
-			to_stream:write(escape(tostring(v), true))
+			for v in flat{opts.out} do
+				if v then
+					to_stream:write(' ')
+					to_stream:write(escape(tostring(v), true))
+				end
+			end
 		end
 
-		if type(opts.out_implicit) == 'table' then
+		if opts.out_implicit ~= nil then
 			ignore_keys.out_implicit = true
-
 			to_stream:write(' |')
 			for v in flat(opts.out_implicit) do
-				to_stream:write(' ')
-				to_stream:write(escape(tostring(v), true))
+				if v then
+					to_stream:write(' ')
+					to_stream:write(escape(tostring(v), true))
+				end
 			end
 		end
 
 		to_stream:write(': ')
 		to_stream:write(tostring(rule_name))
 
-		if type(opts['in']) == 'table' then
-			ignore_keys['in'] = true
-
-			for v in flat(opts['in']) do
+		for v in flat(opts) do
+			if v then
 				to_stream:write(' ')
 				to_stream:write(escape(tostring(v), true))
 			end
 		end
 
-		if type(opts.in_implicit) == 'table' then
+		if opts.in_implicit ~= nil then
 			ignore_keys.in_implicit = true
-
 			to_stream:write(' |')
 			for v in flat(opts.in_implicit) do
-				to_stream:write(' ')
-				to_stream:write(escape(tostring(v), true))
+				if v then
+					to_stream:write(' ')
+					to_stream:write(escape(tostring(v), true))
+				end
 			end
 		end
 
-		if type(opts.in_order) == 'table' then
+		if opts.in_order ~= nil then
 			ignore_keys.in_order = true
-
 			to_stream:write(' ||')
 			for v in flat(opts.in_order) do
-				to_stream:write(' ')
-				to_stream:write(escape(tostring(v), true))
+				if v then
+					to_stream:write(' ')
+					to_stream:write(escape(tostring(v), true))
+				end
 			end
 		end
 
@@ -167,52 +170,12 @@ function Ninja:add_rule(name, opts)
 end
 
 function Ninja:add_build(rule_name, opts)
-	-- convert 'In' to 'in'
-	-- this is a convenience since `in` is a keyword in
-	-- lua and thus cannot be used as a key in a literal
-	-- table.
-	if opts.In ~= nil then
-		assert(opts['in'] == nil, 'cannot specify both `In` and `in`')
-		opts['in'] = opts.In
-		opts.In = nil
-	end
-
-	local function sanitize_key(k)
-		local v = opts[k]
-
-		if v == nil then return end
-
-		if isnuclear(v) then
-			v = {tostring(v)}
-		end
-
-		if type(v) == 'string' then
-			v = {v}
-		end
-
-		assert(type(v) == 'table')
-
-		local t, i = {}, 1
-		for nv in flat(v) do
-			t[i] = tostring(nv)
-			i = i + 1
-		end
-
-		opts[k] = t
-	end
-
-	sanitize_key('out')
-	sanitize_key('out_implicit')
-	sanitize_key('in')
-	sanitize_key('in_implicit')
-	sanitize_key('in_order')
-
 	assert(self.rules[rule_name] ~= nil, 'unknown rule: ' .. rule_name)
-	assert(type(opts.out) == 'table', 'missing required option `out`, or it is not a table')
-	assert(#(opts.out) > 0, 'must specify at least one `out` path (got empty table instead)')
-
+	assert(
+		opts['in'] == nil and opts['In'] == nil,
+		'do not specify `in` or `In` directly; pass inputs as sequence items instead'
+	)
 	table.insert(self.builds, {rule=rule_name, opts=opts})
-
 	return self
 end
 
