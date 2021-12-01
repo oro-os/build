@@ -104,6 +104,19 @@ local function asabs(pth)
 	end
 end
 
+local function resolve(pth, to)
+	if Oro.path.isabs(pth) then
+		return pth
+	else
+		return Oro.path.normalize(
+			Oro.path.join(
+				to or Oro.path.currentdir(),
+				pth
+			)
+		)
+	end
+end
+
 local function asrel(pth)
 	if Oro.path.isabs(pth) then
 		if pth == '/' then return '' end
@@ -217,6 +230,7 @@ return tablefunc(
 		asabs = asabs,
 		asrel = asrel,
 		relpath = relpath,
-		normalize = normalize
+		normalize = normalize,
+		resolve = resolve
 	}
 )

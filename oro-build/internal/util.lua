@@ -106,6 +106,10 @@ local function rpad(str, len, chr)
 	return str .. string.rep(chr or ' ', len - #str)
 end
 
+function startswith(str, start)
+	return string.sub(str, 1, string.len(start)) == start
+end
+
 return {
 	Set = Set,
 	isinstance = isinstance,
@@ -116,5 +120,6 @@ return {
 	shallowclone = shallowclone,
 	keys = keys,
 	lpad = lpad,
-	rpad = rpad
+	rpad = rpad,
+	startswith = startswith
 }

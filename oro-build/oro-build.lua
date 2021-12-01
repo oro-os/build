@@ -50,6 +50,8 @@ local shallowclone = util.shallowclone
 local tablefunc = util.tablefunc
 local isnuclear = util.isnuclear
 local relpath = make_path_factory.relpath
+local resolve = make_path_factory.resolve
+local startswith = util.startswith
 
 -- Standard library extensions
 -- NOTE: These extensions might be exposed to
@@ -297,10 +299,10 @@ local function run_build_script(build_script, context)
 		error('build scripts must have `.oro\' extension: ' .. tostring(build_script))
 	end
 
-	assert(not P.isabs(build_script))
+	assert(P.isabs(build_script))
 	assert(P.normalize(build_script):sub(1, 2) ~= '..')
-	assert(not P.isabs(context.source_dir))
-	assert(not P.isabs(context.build_dir))
+	assert(P.isabs(context.source_dir))
+	assert(P.isabs(context.build_dir))
 
 	local env = pushenv({}, context)
 
@@ -373,21 +375,33 @@ local function run_build_script(build_script, context)
 			end
 
 			discovered = P.normalize(discovered)
+			discovered_dir = P.normalize(P.dirname(discovered))
+
+			-- Ensures build dir path binding works and is correct
+			print('discovered', discovered, context.source_dir)
+			assert(P.isabs(discovered))
+			assert(P.isabs(discovered_dir))
+			assert(startswith(discovered_dir, context.source_dir))
+
+			local new_build_dir = P.normalize(P.join(
+				context.build_dir,
+				relpath(context.source_dir, discovered_dir)
+			))
 
 			-- build nested context
-			local context = shallowclone(context)
+			local new_context = shallowclone(context)
 
-			context.config = overrides.config or context.config
-			context.environ = overrides.env or context.environ
-			context.source_dir = P.normalize(P.join(context.source_dir, P.dirname(discovered)))
-			context.build_dir = P.normalize(P.join(context.build_dir, P.dirname(discovered)))
+			new_context.config = overrides.config or context.config
+			new_context.environ = overrides.env or context.environ
+			new_context.source_dir = discovered_dir
+			new_context.build_dir = new_build_dir
 
 			-- immutable-ize context
-			context.config = context.config:extend{}
-			context.environ = context.environ:extend{}
+			new_context.config = new_context.config:extend{}
+			new_context.environ = new_context.environ:extend{}
 
 			-- process the config
-			return run_build_script(discovered, context)
+			return run_build_script(discovered, new_context)
 		else
 			-- Library import
 
@@ -457,12 +471,16 @@ local function run_build_script(build_script, context)
 end
 
 -- Run main build script
+local abs_source_dir = resolve(P.dirname(Oro.build_script))
+local abs_build_dir = resolve(Oro.bin_dir)
+local abs_build_script = resolve(Oro.build_script)
+
 local exports = {
 	run_build_script(
-		Oro.build_script,
+		abs_build_script,
 		{
-			source_dir = P.dirname(Oro.build_script),
-			build_dir = Oro.bin_dir,
+			source_dir = abs_source_dir,
+			build_dir = abs_build_dir,
 			config = wrap_config(raw_config),
 			environ = wrap_environ(Oro.env)
 		}
