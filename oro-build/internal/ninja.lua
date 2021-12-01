@@ -135,7 +135,7 @@ function Ninja:write(to_stream)
 		end
 
 		for k, v in pairs(opts) do
-			if not ignore_keys[k] then
+			if type(k) == 'string' and not ignore_keys[k] then
 				to_stream:write('\n  ')
 				to_stream:write(k)
 				to_stream:write(' =')
