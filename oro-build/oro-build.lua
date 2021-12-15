@@ -378,7 +378,6 @@ local function run_build_script(build_script, context)
 			discovered_dir = P.normalize(P.dirname(discovered))
 
 			-- Ensures build dir path binding works and is correct
-			print('discovered', discovered, context.source_dir)
 			assert(P.isabs(discovered))
 			assert(P.isabs(discovered_dir))
 			assert(startswith(discovered_dir, context.source_dir))
