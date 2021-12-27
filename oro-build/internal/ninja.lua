@@ -175,7 +175,9 @@ function Ninja:add_build(rule_name, opts)
 		opts['in'] == nil and opts['In'] == nil,
 		'do not specify `in` or `In` directly; pass inputs as sequence items instead'
 	)
+
 	table.insert(self.builds, {rule=rule_name, opts=opts})
+
 	return self
 end
 
