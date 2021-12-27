@@ -152,7 +152,8 @@ local function make_rule_factory(on_rule, on_entry)
 			rule_opts,
 			{
 				__index = Rule,
-				__call = make_build
+				__call = make_build,
+				__name = 'Rule'
 			}
 		)
 	end
