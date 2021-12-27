@@ -42,11 +42,38 @@ if [ ! -f "$BIN_DIR/.oro-build" ] || test "$ROOT_DIR/oro-build.c" -nt "$BIN_DIR/
 		die "either \$CC not set, or it/'cc' (the default) does not refer to a valid program"
 
 	echo 'first run detected; bootstrapping Oro build...'
-	# TIP: change the `-O3 -g0` to `-O0 -g3` to compile with debug information
-	"${CC}" -o "$BIN_DIR/.oro-build" -O3 -g0 -DMAKE_LIB=1 -DLUA_ANSI=1 -Wall -Wextra -Werror -I"$ROOT_DIR/ext/lua" "$ROOT_DIR/oro-build.c" -lm
+
+	comp_flags="-O3 -g0"
+	if [ ! -z "${ORO_BUILD_DEBUG-}" ]; then
+		comp_flags="-O0 -g3"
+	fi
+
+	"${CC}" -o "$BIN_DIR/.oro-build" ${comp_flags} -DMAKE_LIB=1 -DLUA_ANSI=1 -Wall -Wextra -Werror -I"$ROOT_DIR/ext/lua" "$ROOT_DIR/oro-build.c" -lm
 fi
 
-# TIP: prefix this line with `gdb --args` to debug the build system if there are crashes.
-"${BIN_DIR}/.oro-build" "$ROOT_DIR" "$BIN_DIR" "$BOOTSTRAP_SCRIPT" "$BUILD_SCRIPT" "$@"
+# TODO(qix-) If someone knows a better way to DRY this up
+#            without requiring Bash, a PR would be great.
+if [ ! -z "${ORO_BUILD_DEBUG-}" ]; then
+	gdb --args "${BIN_DIR}/.oro-build" "$ROOT_DIR" "$BIN_DIR" "$BOOTSTRAP_SCRIPT" "$BUILD_SCRIPT" "$@"
+else
+	set +e
+	"${BIN_DIR}/.oro-build" "$ROOT_DIR" "$BIN_DIR" "$BOOTSTRAP_SCRIPT" "$BUILD_SCRIPT" "$@"
+	status=$?
+	set -e
+
+	# Helpful hint for ORO_BUILD_DEBUG
+	#    SIGILL                 SIGABRT                SIGFPE                 SIGSEGV
+	if [ $status -eq 132 ] || [ $status -eq 134 ] || [ $status -eq 136 ] || [ $status -eq 139 ]; then
+		echo >&2
+		echo 'CRASHED! It appears the Oro build system crashed - this is most likely a bug.' >&2
+		echo '         A bug report with any associated scripts would be highly appreciated.' >&2
+		echo '         https://github.com/oro-os/build/issues/new' >&2
+		echo >&2
+		echo '         To drop into a `gdb` instance, remove .oro-build from the build directory' >&2
+		echo '         and re-configure with the environment variable `ORO_BUILD_DEBUG=1`.' >&2
+		echo >&2
+		exit $status
+	fi
+fi
 
 # vim: set syntax=sh:
