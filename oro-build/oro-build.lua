@@ -11,28 +11,12 @@
 -- Main entry point for the Oro build system
 --
 
--- The `Oro` table is the set of utilities coming from
--- the C runtime (oro-build.c).
-if type(_G.Oro) ~= 'table' then
-	error '`Oro` not defined; do not call oro-build.lua directly!'
-end
-
 -- Set the locale for the entire program
 os.setlocale('C', 'all')
 
--- Pre-load 'lfs' and load 'lua-path'
-package.path = Oro.root_dir .. '/ext/lua-path/lua/?.lua'
-package.loaded.lfs = Oro.lfs
-require('path.fs') -- (just asserts that 'lfs' is loaded properly)
-Oro.path = (require 'path').new('/')
-local P = Oro.path -- cleans up the source considerably
-
--- Re-set the inclusion path to the Oro build library
--- as well as the source path.
-package.path = (
-	Oro.root_dir .. '/?.lua'
-	.. ';' .. Oro.root_dir .. '/?/_.lua'
-)
+-- Initialize the Oro harness (MUST come before
+-- any other `require`s)
+local Oro = require 'internal.oro'
 
 -- Include internal code
 local Ninjafile = require 'internal.ninja'
@@ -52,6 +36,8 @@ local startswith = require 'internal.util.startswith'
 
 local relpath = make_path_factory.relpath
 local resolve = make_path_factory.resolve
+
+local P = Oro.path -- cleans up the source considerably
 
 -- Standard library extensions
 -- NOTE: These extensions might be exposed to
@@ -186,14 +172,14 @@ local function on_ninja_build(rule_name, opts) ninja:add_build(rule_name, opts) 
 local function internal_build_path(pth)
 	return P.normalize(
 		relpath(
-			P.abspath(Oro.bin_dir),
+			P.abspath(Oro.bindir),
 			P.abspath(pth)
 		)
 	)
 end
 
 local function internal_build_root_path(pth)
-	return internal_build_path(P.join(Oro.root_dir, pth))
+	return internal_build_path(P.join(Oro.rootdir, pth))
 end
 
 local config_deps = List{
@@ -237,12 +223,15 @@ local function pushenv(env, context, name)
 		{ isnuclear = isnuclear }
 	)
 
+	-- Oro global
+	env.Oro = Oro
+
 	-- Generic utilities
 	env.print = make_oro_print(name)
 	env.Set = Set
 	env.List = List
 	env.execute_immediately = Oro.execute
-	env.search_path = Oro.search_path
+	env.search_path = Oro.searchpath
 
 	-- Build config facilities
 	env.Rule = make_rule_factory(on_ninja_rule, on_ninja_build)
@@ -270,10 +259,10 @@ local function pushenv(env, context, name)
 		environ = context.environ,
 		build_factory = make_path_factory(
 			P.abspath(context.build_dir),
-			P.abspath(Oro.bin_dir)),
+			P.abspath(Oro.bindir)),
 		source_factory = make_path_factory(
 			P.abspath(context.source_dir),
-			P.abspath(Oro.bin_dir))
+			P.abspath(Oro.bindir))
 	}
 
 	-- This should never happen.
@@ -421,8 +410,8 @@ local function run_build_script(build_script, context)
 				if cached ~= nil then return unpack(cached) end
 
 				local search_path = (
-					P.normalize(P.join(Oro.root_dir, 'lib/?.lua'))
-					.. ';' .. P.normalize(P.join(Oro.root_dir, 'lib/?/_.lua'))
+					P.normalize(P.join(Oro.rootdir, 'lib/?.lua'))
+					.. ';' .. P.normalize(P.join(Oro.rootdir, 'lib/?/_.lua'))
 				)
 
 				local discovered, attempted = package.searchpath(
@@ -457,7 +446,7 @@ local function run_build_script(build_script, context)
 
 	-- Append the build script as a dependency
 	config_deps[nil] = relpath(
-		P.abspath(Oro.bin_dir),
+		P.abspath(Oro.bindir),
 		P.abspath(build_script)
 	)
 
@@ -471,9 +460,9 @@ local function run_build_script(build_script, context)
 end
 
 -- Run main build script
-local abs_source_dir = resolve(P.dirname(Oro.build_script))
-local abs_build_dir = resolve(Oro.bin_dir)
-local abs_build_script = resolve(Oro.build_script)
+local abs_source_dir = resolve(P.dirname(Oro.buildscript))
+local abs_build_dir = resolve(Oro.bindir)
+local abs_build_script = resolve(Oro.buildscript)
 
 local exports = {
 	run_build_script(
@@ -503,11 +492,11 @@ end
 
 -- Add default generation rule (so that any config files
 -- are checked in order to re-config)
-local ninja_out = Oro.bin_dir .. '/build.ninja'
+local ninja_out = Oro.bindir .. '/build.ninja'
 
 ninja:add_rule('_oro_build_regenerator', {
-	command = { 'cd', P.currentdir(), '&&', 'env', '_ORO_BUILD_REGEN=1', Oro.build_script, Oro.bin_dir, unpack(Oro.arg) },
-	description = { 'Reconfigure', Oro.bin_dir },
+	command = { 'cd', P.currentdir(), '&&', 'env', '_ORO_BUILD_REGEN=1', Oro.buildscript, Oro.bindir, unpack(Oro.arg) },
+	description = { 'Reconfigure', Oro.bindir },
 	generator = '1'
 })
 
@@ -534,7 +523,7 @@ ostream:close()
 
 -- Done!
 if had_config_output then io.stderr:write('\n') end
-io.stderr:write('OK, configured: ' .. P.abspath(Oro.bin_dir) .. '\n')
+io.stderr:write('OK, configured: ' .. P.abspath(Oro.bindir) .. '\n')
 if os.getenv('_ORO_BUILD_REGEN') == nil then
-	io.stderr:write('You should now run: ninja -C \''..Oro.bin_dir..'\'\n')
+	io.stderr:write('You should now run: ninja -C \''..Oro.bindir..'\'\n')
 end

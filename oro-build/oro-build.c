@@ -170,7 +170,7 @@ static char * oro_strndup(const char *str, size_t len) {
 	return newstr;
 }
 
-// https://stackoverflow.com/a/26228023/510036
+/* https://stackoverflow.com/a/26228023/510036 */
 static char * oro_strsep(char **stringp, const char *delim) {
 	if (*stringp == NULL) { return NULL; }
 	char *token_start = *stringp;
@@ -643,7 +643,17 @@ int main(int argc, char *argv[]) {
 			lua_rawset(L, -3);
 		}
 	}
-	lua_setglobal(L, "Oro");
+	lua_setglobal(L, "__ORO__");
+
+	/*
+		Set up the package search path.
+		In the case we `require` a directory,
+		look for the "index" at `<dir>/_.lua`.
+	*/
+	lua_getglobal(L, "package");
+	lua_pushfstring(L, "%s/?.lua;%s/?/_.lua", root_dir, root_dir);
+	lua_setfield(L, -2, "path");
+	lua_pop(L, 1);
 
 	if (luaL_loadfile(L, bootstrap_script) != 0) {
 		fprintf(stderr, "error: lua bootstrap failed: %s\n", lua_tostring(L, -1));

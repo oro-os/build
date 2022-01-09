@@ -12,6 +12,7 @@
 -- and resolution
 --
 
+local Oro = require 'internal.oro'
 local flat = require 'internal.util.flat'
 local unpack = require 'internal.util.unpack'
 local tablefunc = require 'internal.util.tablefunc'
