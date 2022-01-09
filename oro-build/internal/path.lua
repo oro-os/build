@@ -83,7 +83,7 @@ function Path:join(pth)
 	end
 end
 
-function Path__tostring(self)
+local function Path__tostring(self)
 	local path, base = self._path, self._base
 
 	if #base == 0 then return path end
