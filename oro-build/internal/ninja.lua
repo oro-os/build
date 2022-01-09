@@ -12,12 +12,10 @@
 -- and code generator
 --
 
-local util = require 'internal.util'
-local flat = require 'internal.flat'
-
-local Set = util.Set
-local isnuclear = util.isnuclear
-local tablefunc = util.tablefunc
+local flat = require 'internal.util.flat'
+local Set = require 'internal.util.set'
+local isnuclear = require 'internal.util.isnuclear'
+local tablefunc = require 'internal.util.tablefunc'
 
 local Ninja = {}
 

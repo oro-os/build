@@ -12,13 +12,11 @@
 -- and resolution
 --
 
-local util = require 'internal.util'
-local flat = require 'internal.flat'
-
-local unpack = util.unpack
-local tablefunc = util.tablefunc
-local isinstance = util.isinstance
-local List = util.List
+local flat = require 'internal.util.flat'
+local unpack = require 'internal.util.unpack'
+local tablefunc = require 'internal.util.tablefunc'
+local isinstance = require 'internal.util.isinstance'
+local List = require 'internal.util.list'
 
 local Path = {}
 local Path__mt = nil

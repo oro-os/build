@@ -35,24 +35,23 @@ package.path = (
 )
 
 -- Include internal code
-local util = require 'internal.util'
 local Ninjafile = require 'internal.ninja'
 local make_path_factory = require 'internal.path'
-local flat = require 'internal.flat'
 local wrap_environ = require 'internal.environ'
 local wrap_config = require 'internal.config'
-local protect = require 'internal.protect'
+local protect = require 'internal.util.protect'
+local flat = require 'internal.util.flat'
+local Set = require 'internal.util.set'
+local List = require 'internal.util.list'
+local unpack = require 'internal.util.unpack'
+local isinstance = require 'internal.util.isinstance'
+local shallowclone = require 'internal.util.shallowclone'
+local tablefunc = require 'internal.util.tablefunc'
+local isnuclear = require 'internal.util.isnuclear'
+local startswith = require 'internal.util.startswith'
 
-local Set = util.Set
-local List = util.List
-local unpack = util.unpack
-local isinstance = util.isinstance
-local shallowclone = util.shallowclone
-local tablefunc = util.tablefunc
-local isnuclear = util.isnuclear
 local relpath = make_path_factory.relpath
 local resolve = make_path_factory.resolve
-local startswith = util.startswith
 
 -- Standard library extensions
 -- NOTE: These extensions might be exposed to
@@ -61,10 +60,10 @@ local startswith = util.startswith
 --       breaking out of the sandbox or have
 --       any side effects.
 string.split = Oro.split
-string.lpad = util.lpad
-string.rpad = util.rpad
+string.lpad = (require 'internal.util.pad').left
+string.rpad = (require 'internal.util.pad').right
 table.flat = flat
-table.keys = util.keys
+table.keys = require 'internal.util.keys'
 table.shallowclone = shallowclone
 table.unpack = unpack -- just to be sure.
 

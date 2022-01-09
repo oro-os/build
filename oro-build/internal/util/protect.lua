@@ -24,8 +24,7 @@
 --
 
 local debug = require 'debug'
-
-local tablefunc = (require 'internal.util').tablefunc
+local tablefunc = require 'internal.util.tablefunc'
 
 -- A 'private' symbol that cannot be forged.
 local protectedsym = {}

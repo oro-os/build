@@ -13,8 +13,7 @@
 -- modified
 --
 
-local util = require 'internal.util'
-local tablefunc = util.tablefunc
+local tablefunc = require 'internal.util.tablefunc'
 
 local Environ = {} -- dummy metatable
 

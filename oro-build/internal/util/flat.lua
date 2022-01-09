@@ -13,9 +13,7 @@
 -- (tables with __name MT entries)
 --
 
-local util = require 'internal.util'
-
-local isnuclear = util.isnuclear
+local isnuclear = require 'internal.util.isnuclear'
 
 local function flat(t)
 	local stack = {{{t}, 1}}
