@@ -41,6 +41,7 @@ local make_path_factory = require 'internal.path'
 local flat = require 'internal.flat'
 local wrap_environ = require 'internal.environ'
 local wrap_config = require 'internal.config'
+local protect = require 'internal.protect'
 
 local Set = util.Set
 local List = util.List
@@ -227,7 +228,7 @@ local function pushenv(env, context, name)
 	env.pcall = pcall
 	env.xpcall = xpcall
 	env.rawequal = rawequal
-	env.rawset = rawset
+	env.rawset = protect.rawset
 	env.rawget = rawget
 	env.select = select
 	env.tonumber = tonumber
