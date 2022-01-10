@@ -18,7 +18,7 @@ local DEFAULT_COMPILER = {}
 
 local exe_linker_cache = {}
 local function link_exe_builder(opts)
-	local linker_key = C'CC' or E'CC' or DEFAULT_COMPILER
+	local linker_key = C.CC or E.CC or DEFAULT_COMPILER
 
 	local exe_linker = exe_linker_cache[linker_key]
 	if exe_linker == nil then
@@ -29,23 +29,24 @@ local function link_exe_builder(opts)
 			new_linker[k] = v
 		end
 
-		new_linker.rule = new_linker.rule:clone()
-		new_linker.rule.description = (
-			'LINK EXE('
-			.. Rule.escapeall(new_linker.compiler_command)
-			.. ') $out'
-		)
+		new_linker.rule = new_linker.rule:clone {
+			description = (
+				'LINK EXE('
+				.. oro.Rule.escapeall(new_linker.compiler_command)
+				.. ') $out'
+			)
+		}
 
 		exe_linker_cache[linker_key] = new_linker
 		exe_linker = new_linker
 	end
 
-	local cflags = List(opts.ldflags)
+	local cflags = oro.List(opts.ldflags)
 
 	local release = opts.release
 	local release_fast = false
 	if release == nil then
-		release = C'RELEASE'
+		release = C.RELEASE
 		release_fast = opts.fast or tostring(release) == 'fast'
 		release = release ~= nil and tostring(release) ~= '0'
 	end
@@ -70,7 +71,7 @@ local function link_exe_builder(opts)
 end
 
 local function misuse_catch()
-	error[[link{} can't be used directly; use link.exe{} instead]]
+	error([[link{} can't be used directly; use link.exe{} instead]], 2)
 end
 
 return setmetatable(

@@ -81,7 +81,7 @@ function Ninja:write(to_stream)
 
 		if opts.out ~= nil then
 			ignore_keys.out = true
-			for v in flat{opts.out} do
+			for v in flat(opts.out) do
 				if v then
 					to_stream:write(' ')
 					to_stream:write(escape(tostring(v), true))

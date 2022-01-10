@@ -17,11 +17,15 @@ local DEFAULT_COMPILER = {} -- marker table, used as a key
 local rule_cache = {}
 
 local function configure_compiler(compiler_command, skip_prelude)
-	compiler_command_args = Oro.split(tostring(compiler_command), ' \t\n')
+	local compiler_command_args = string.split(tostring(compiler_command), ' \t\n')
 
-	resolved_command = Oro.searchpath(compiler_command_args[1], E'PATH' or '')
+	resolved_command = oro.searchpath(compiler_command_args[1], E.PATH or '')
 	if resolved_command == nil then
-		error('failed to configure C compiler; no such executable (not on PATH): ' .. compiler_command_args[1])
+		error(
+			'failed to configure C compiler; no such executable (not on PATH): '
+			.. compiler_command_args[1],
+			2
+		)
 	end
 
 	compiler_command_args[1] = resolved_command
@@ -30,7 +34,7 @@ local function configure_compiler(compiler_command, skip_prelude)
 		print('configuring C compiler: ' .. compiler_command)
 	end
 
-	local status, stdout, stderr = Oro.execute{
+	local status, stdout, stderr = oro.execute{
 		raise=false,
 		compiler_command_args[1],
 		'--version'
@@ -40,28 +44,32 @@ local function configure_compiler(compiler_command, skip_prelude)
 		if stderr == nil or #stderr == 0 then
 			stderr = '<no error output>'
 		end
-		print('    failure: exited ' .. tostring(status) .. ': ' .. stderr)
-		error('C compiler configuration failed: ' .. compiler_command)
+		print('\tfailure: exited ' .. tostring(status) .. ': ' .. stderr)
+		error(
+			'C compiler configuration failed: '
+			.. compiler_command,
+			2
+		)
 	end
 
-	print('    ' .. stdout:gsub('\n', '\n    '):gsub('[\n \t]+$', ''))
+	print('\t>> ' .. stdout:gsub('[\n \t]+$', ''):gsub('\n', '\n\t>> '))
 
 	-- Attempt to detect which compiler suite it is
 	local use_variant = 'gcc'
 
 	if stdout:find('clang') ~= nil then
-		print('\n    detected Clang')
+		print('\tdetected Clang')
 		use_variant = 'clang'
 	elseif stdout:find('gcc') ~= nil then
-		print('\n    detected GCC')
+		print('\tdetected GCC')
 	else
-		print('\n    WARNING: could not detect compiler variant (falling back to GCC-like)')
+		print('\tWARNING: could not detect compiler variant (falling back to GCC-like)')
 	end
 
 	local variant = require ('cc._variant.'..use_variant)
 	assert(variant ~= nil)
 
-	local rule = Rule {
+	local rule = oro.Rule {
 		command = {
 			compiler_command_args,
 			variant.flag_output('$out'),
@@ -70,10 +78,10 @@ local function configure_compiler(compiler_command, skip_prelude)
 			'$in'
 		},
 		depfile = '$out.d',
-		description = 'CC(' .. Rule.escapeall(compiler_command) .. ') $out'
+		description = 'CC(' .. oro.Rule.escapeall(compiler_command) .. ') $out'
 	}
 
-	print('    OK')
+	print('\tOK')
 	return {
 		rule = rule,
 		variant_name = use_variant,
@@ -88,29 +96,35 @@ local function detect_default_compiler()
 	local to_test = {'cc', 'gcc', 'clang', 'tcc'}
 	local resolved = nil
 
-	local path = E'PATH'
+	local path = E.PATH
 	if path == nil then
-		error('attempted to auto-detect system C compiler but PATH environment variable is not set')
+		error(
+			'attempted to auto-detect system C compiler but PATH environment variable is not set',
+			2
+		)
 	end
 
 	for _, v in ipairs(to_test) do
-		resolved = Oro.searchpath(v, path)
+		resolved = oro.searchpath(v, path)
 		if resolved ~= nil then
 			break
 		end
 	end
 
 	if resolved == nil then
-		error('could not detect C compiler; tried: '..table.concat(to_test, ', '))
+		error(
+			'could not detect C compiler; tried: '
+			.. table.concat(to_test, ', '),
+			2
+		)
 	end
 
-	print('    found:', resolved)
-	print()
+	print('\tfound:', resolved)
 	return configure_compiler(resolved, true)
 end
 
 local function configure()
-	local compiler_command = C'CC' or E'CC' or DEFAULT_COMPILER
+	local compiler_command = C.CC or E.CC or DEFAULT_COMPILER
 
 	local rule = rule_cache[compiler_command]
 

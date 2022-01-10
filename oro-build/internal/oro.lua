@@ -44,13 +44,21 @@ local Oro = {
 	arg = ORO.arg
 }
 
--- Pre-load 'lfs' and load 'lua-path', making sure
+-- Pre-load 'lfs' and 'lua-path', making sure
 -- to preserve the search path provided by the harness.
 local origpath = package.path
 package.path = ORO.root_dir .. '/ext/lua-path/lua/?.lua'
 package.loaded.lfs = ORO.lfs
-require('path.fs') -- (just asserts that 'lfs' is loaded properly)
-Oro.path = (require 'path').new('/')
+require('path.fs')
+require('path')
 package.path = origpath
+
+local P = require 'internal.path'
+
+Oro.absrootdir = P.resolve(Oro.rootdir)
+Oro.absbindir = P.resolve(Oro.bindir)
+Oro.absbuildscript = P.resolve(Oro.buildscript)
+Oro.srcdir = P.dirname(Oro.buildscript)
+Oro.abssrcdir = P.dirname(Oro.absbuildscript)
 
 return Oro

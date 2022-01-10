@@ -11,10 +11,10 @@
 -- Shallow clones a table
 --
 
-local function shallowclone(tbl)
-	local t = {}
-	for k,v in pairs(tbl) do t[k] = v end
-	return t
+local function shallowclone(tbl, to)
+	if to == nil then to = {} end
+	for k,v in pairs(tbl) do to[k] = v end
+	return to
 end
 
 return shallowclone
