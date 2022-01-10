@@ -14,6 +14,7 @@
 --
 
 local isnuclear = require 'internal.util.isnuclear'
+local iscallable = require 'internal.util.iscallable'
 
 local function flat(t)
 	local stack = {{{t}, 1}}

@@ -16,7 +16,7 @@ local configure = require 'cc._configure'
 local function cc_builder(_, opts)
 	local compiler = configure()
 
-	local cflags = List(opts.cflags)
+	local cflags = oro.List(opts.cflags)
 
 	cflags[nil] = compiler.variant.flag_compile_object
 
@@ -33,7 +33,7 @@ local function cc_builder(_, opts)
 	local release = opts.release
 	local release_fast = false
 	if release == nil then
-		release = C'RELEASE'
+		release = C.RELEASE
 		release_fast = opts.fast or tostring(release) == 'fast'
 		release = release ~= nil and tostring(release) ~= '0'
 	end
@@ -72,7 +72,8 @@ local function cc_builder(_, opts)
 		if type(opts.define) ~= 'table' then
 			error(
 				'`define` parameter must be a table; got '
-				.. type(opts.define)
+				.. type(opts.define),
+				2
 			)
 		end
 
@@ -84,7 +85,8 @@ local function cc_builder(_, opts)
 			else
 				error(
 					'invalid `define` key (must be either string or number): ',
-					type(k)
+					type(k),
+					2
 				)
 			end
 		end
@@ -98,13 +100,15 @@ local function cc_builder(_, opts)
 			) then
 				error(
 					'optional `out` parameter for \'cc\' must have exactly 1 item; got '
-					.. tostring(#opts.out)
+					.. tostring(#opts.out),
+					2
 				)
 			end
 		elseif type(opts.out) ~= 'string' then
 			error(
 				'optional `out` parameter for \'cc\' must either be a string, table, or path; got '
-				.. type(opts.out)
+				.. type(opts.out),
+				2
 			)
 		end
 
@@ -114,15 +118,26 @@ local function cc_builder(_, opts)
 			cflags = cflags
 		}
 	else
-		local out = List()
+		local out = oro.List()
+
 		for v in table.flat(opts) do
-			local outfile = B(v):append('.o')
-			out[nil] = outfile
-			compiler.rule {
-				v,
-				out = {outfile},
-				cflags = cflags
-			}
+			if oro.ispath(v) then
+				local outfile = B(v):append('.o')
+				out[nil] = outfile
+				compiler.rule {
+					v,
+					out = {outfile},
+					cflags = cflags
+				}
+			else
+				error(
+					'compilation inputs must be (lists of) Paths; got '
+					.. type(v)
+					.. ': '
+					.. tostring(v),
+					2
+				)
+			end
 		end
 
 		return out

@@ -14,9 +14,11 @@
 -- metatable)
 --
 
+local freeze = require 'internal.util.freeze'
+
 local function isinstance(v, meta)
 	assert(meta ~= nil)
-	local mt = getmetatable(v)
+	local mt = getmetatable(freeze.unfreeze(v))
 	return mt ~= nil and mt.__index == meta
 end
 

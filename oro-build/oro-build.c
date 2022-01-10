@@ -558,7 +558,7 @@ int main(int argc, char *argv[]) {
 
 	if (argc < 5) {
 		fputs("error: Oro build system called with insufficient arguments\n", stderr);
-		fputs("error: (hint: don't call `.oro-build` directly)\n", stderr);
+		fputs("error: (hint: don't call `.oro/build` directly)\n", stderr);
 		status = 2;
 		goto exit;
 	}

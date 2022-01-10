@@ -31,11 +31,11 @@ BIN_DIR="${2}"
 
 shift 2
 
-if [ ! -d "$BIN_DIR" ]; then
-	mkdir -p "$BIN_DIR" || die "failed to create build directory: ${BIN_DIR}"
+if [ ! -d "$BIN_DIR/.oro" ]; then
+	mkdir -p "$BIN_DIR/.oro" || die "failed to create build directory: ${BIN_DIR}"
 fi
 
-if [ ! -f "$BIN_DIR/.oro-build" ] || test "$ROOT_DIR/oro-build.c" -nt "$BIN_DIR/.oro-build" ; then
+if [ ! -f "$BIN_DIR/.oro/build" ] || test "$ROOT_DIR/oro-build.c" -nt "$BIN_DIR/.oro/build" ; then
 	CC="${CC-cc}"
 
 	"${CC}" --version >/dev/null ||\
@@ -48,16 +48,16 @@ if [ ! -f "$BIN_DIR/.oro-build" ] || test "$ROOT_DIR/oro-build.c" -nt "$BIN_DIR/
 		comp_flags="-O0 -g3"
 	fi
 
-	"${CC}" -o "$BIN_DIR/.oro-build" ${comp_flags} -DMAKE_LIB=1 -DLUA_ANSI=1 -Wall -Wextra -Werror -I"$ROOT_DIR/ext/lua" "$ROOT_DIR/oro-build.c" -lm
+	"${CC}" -o "$BIN_DIR/.oro/build" ${comp_flags} -DMAKE_LIB=1 -DLUA_ANSI=1 -Wall -Wextra -Werror -I"$ROOT_DIR/ext/lua" "$ROOT_DIR/oro-build.c" -lm
 fi
 
 # TODO(qix-) If someone knows a better way to DRY this up
 #            without requiring Bash, a PR would be great.
 if [ ! -z "${ORO_BUILD_DEBUG-}" ]; then
-	gdb --args "${BIN_DIR}/.oro-build" "$ROOT_DIR" "$BIN_DIR" "$BOOTSTRAP_SCRIPT" "$BUILD_SCRIPT" "$@"
+	gdb --args "${BIN_DIR}/.oro/build" "$ROOT_DIR" "$BIN_DIR" "$BOOTSTRAP_SCRIPT" "$BUILD_SCRIPT" "$@"
 else
 	set +e
-	"${BIN_DIR}/.oro-build" "$ROOT_DIR" "$BIN_DIR" "$BOOTSTRAP_SCRIPT" "$BUILD_SCRIPT" "$@"
+	"${BIN_DIR}/.oro/build" "$ROOT_DIR" "$BIN_DIR" "$BOOTSTRAP_SCRIPT" "$BUILD_SCRIPT" "$@"
 	status=$?
 	set -e
 
@@ -69,7 +69,7 @@ else
 		echo '         A bug report with any associated scripts would be highly appreciated.' >&2
 		echo '         https://github.com/oro-os/build/issues/new' >&2
 		echo >&2
-		echo '         To drop into a `gdb` instance, remove .oro-build from the build directory' >&2
+		echo '         To drop into a `gdb` instance, remove .oro/build from the build directory' >&2
 		echo '         and re-configure with the environment variable `ORO_BUILD_DEBUG=1`.' >&2
 		echo >&2
 		exit $status

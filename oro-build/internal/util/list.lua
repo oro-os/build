@@ -45,10 +45,11 @@ local function make_list(list)
 			if k == nil then
 				k = #self + 1
 			end
-			assert(type(k) == 'number', 'key must be a number')
-			assert(k == #self + 1, 'cannot set out-of-bounds index')
+			if type(k) ~= 'number' then error('key must be a number', 2) end
+			if k ~= (#self + 1) then error('cannot set out-of-bounds index', 2) end
 			rawset(self, k, v)
-		end
+		end,
+		__metatable = {}
 	})
 end
 
