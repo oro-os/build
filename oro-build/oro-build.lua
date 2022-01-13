@@ -76,6 +76,8 @@ local function add_build_dep(srcpath)
 end
 
 add_build_dep(P.join(Oro.rootdir, 'oro-build.lua'))
+add_build_dep(P.join(Oro.rootdir, 'oro-build.c'))
+
 for _, srcpath in ipairs(keys(ctx.modules)) do
 	add_build_dep(P.relpath(Oro.abssrcdir, srcpath))
 end
