@@ -116,7 +116,9 @@ local function make_context(opts)
 			end
 		})
 	}
+
 	ctx.current_module = ctx.root_module
+	ctx.modules[ctx.root] = ctx.root_module
 
 	return ctx
 end
