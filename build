@@ -54,7 +54,7 @@ fi
 # TODO(qix-) If someone knows a better way to DRY this up
 #            without requiring Bash, a PR would be great.
 if [ ! -z "${ORO_BUILD_DEBUG-}" ]; then
-	gdb --args "${BIN_DIR}/.oro/build" "$ROOT_DIR" "$BIN_DIR" "$BOOTSTRAP_SCRIPT" "$BUILD_SCRIPT" "$@"
+	exec gdb --args "${BIN_DIR}/.oro/build" "$ROOT_DIR" "$BIN_DIR" "$BOOTSTRAP_SCRIPT" "$BUILD_SCRIPT" "$@"
 else
 	set +e
 	"${BIN_DIR}/.oro/build" "$ROOT_DIR" "$BIN_DIR" "$BOOTSTRAP_SCRIPT" "$BUILD_SCRIPT" "$@"
@@ -72,8 +72,9 @@ else
 		echo '         To drop into a `gdb` instance, remove .oro/build from the build directory' >&2
 		echo '         and re-configure with the environment variable `ORO_BUILD_DEBUG=1`.' >&2
 		echo >&2
-		exit $status
 	fi
+
+	exit $status
 fi
 
 # vim: set syntax=sh:
