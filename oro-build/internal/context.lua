@@ -347,6 +347,11 @@ function Context:definebuild(build)
 		'R'..ruleid,
 		build.options
 	)
+
+	if not build.options.exclude then
+		assert(self.current_module ~= nil)
+		self.current_module.exports.all[nil] = {build.options.out, build.options.out_implicit}
+	end
 end
 
 function Context:makephony(arguments, deps)
@@ -373,7 +378,8 @@ function Context:makephony(arguments, deps)
 		options = {
 			in_implicit = {deps},
 			command = {arguments},
-			out_implicit = {tagpath}
+			out_implicit = {tagpath},
+			exclude = true
 		}
 	}
 
