@@ -19,7 +19,7 @@ local rule_cache = {}
 local function configure_compiler(compiler_command, skip_prelude)
 	local compiler_command_args = string.split(tostring(compiler_command), ' \t\n')
 
-	resolved_command = oro.searchpath(compiler_command_args[1], E.PATH or '')
+	local resolved_command = oro.searchpath(compiler_command_args[1], E.PATH or '')
 	if resolved_command == nil then
 		error(
 			'failed to configure C compiler; no such executable (not on PATH): '
