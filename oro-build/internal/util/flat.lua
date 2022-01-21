@@ -46,12 +46,11 @@ local function flat(t)
 			if #v == 0 then return nextv() end
 
 			itr = {v, 1}
-			local nv = iter(itr)
-			if nv ~= nil then
-				stack[#stack + 1] = itr
-				v = nv
-			end
+			stack[#stack + 1] = itr
+			v = iter(itr)
 		end
+
+		if v == nil then return nextv() end
 
 		return v
 	end
