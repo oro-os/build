@@ -69,8 +69,9 @@ ctx.ninja:add_rule('_oro_build_regenerator', {
 	generator = '1'
 })
 
-local config_deps = List()
+
 local build_offset = P.relpath(Oro.absbindir, Oro.abssrcdir)
+local config_deps = List{ P.join(build_offset, P.basename(Oro.buildscript)) }
 local function add_build_dep(srcpath)
 	config_deps[nil] = P.join(build_offset, srcpath)
 end
