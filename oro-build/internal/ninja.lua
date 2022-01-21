@@ -167,6 +167,14 @@ function Ninja:add_rule(name, opts)
 	return self
 end
 
+function Ninja:add_phony(name, inputs)
+	table.insert(self.builds, {
+		rule='phony',
+		opts={out = name, inputs}
+	})
+	return self
+end
+
 function Ninja:add_build(rule_name, opts)
 	assert(self.rules[rule_name] ~= nil, 'unknown rule: ' .. rule_name)
 	assert(

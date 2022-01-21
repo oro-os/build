@@ -36,7 +36,7 @@ local function make_module(opts)
 			context = opts.context or error 'missing opts.context',
 			env = opts.env or error 'missing opts.env',
 			config = opts.config or error 'missing opts.config',
-			exports = {}
+			exports = {all = List()}
 		},
 		{
 			__index = Module,
@@ -169,6 +169,10 @@ function Context:export(name, value)
 
 	if type(name) ~= 'string' then
 		error('export names must be strings (got ' .. type(name) .. ')', 2)
+	end
+
+	if name == 'all' then
+		error('cannot override export \'all\'', 2)
 	end
 
 	self.current_module.exports[name] = value
@@ -321,8 +325,10 @@ end
 
 function Context:definerule(rule)
 	local id = tostring(#self.rules)
+
 	self.rules[nil] = rule
 	self.rulemap[rule] = id
+
 	self.ninja:add_rule(
 		'R'..id,
 		rule.options
@@ -333,11 +339,16 @@ function Context:definebuild(build)
 	assert(build.rule ~= nil)
 	local ruleid = self.rulemap[build.rule]
 	assert(ruleid ~= nil)
+
 	self.builds[nil] = build
+
 	self.ninja:add_build(
 		'R'..ruleid,
 		build.options
 	)
+
+	assert(self.current_module ~= nil)
+	self.current_module.exports.all[nil] = {build.options.out}
 end
 
 function Context:makesourcepath(...)
@@ -390,7 +401,12 @@ function Module:result()
 		-- really want to". I'm not going to act like I'm smarter than you
 		-- (at least, not in every scenario). Use with care, please. I WILL
 		-- break you in later releases if this feature ends up being a mistake.
-		__newindex = self.exports,
+		__newindex = function (_, k, v)
+			if k == 'all' then
+				error('cannot override child \'all\' export', 3)
+			end
+			self.exports[k] = v
+		end,
 		__name = 'ModuleResult'
 	})
 
