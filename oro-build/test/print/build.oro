@@ -1,0 +1,3 @@
+#!/usr/bin/env ../../../build
+-- vim: set syntax=lua:
+print('test')
