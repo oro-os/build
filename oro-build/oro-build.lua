@@ -111,6 +111,14 @@ for k,v in pairs(rootphonies) do
 	ctx.ninja:add_phony(k, {v})
 end
 
+-- Make any root default export(s) the default target(s)
+if ctx.root_module.default_export ~= nil then
+	for v in flat(ctx.root_module.default_export) do
+		if isinstance(v, Path) then
+			ctx.ninja:add_default(v)
+		end
+	end
+end
 
 -- Enumerate all configuration dependencies
 local build_offset = P.relpath(Oro.absbindir, Oro.abssrcdir)
