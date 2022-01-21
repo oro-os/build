@@ -395,9 +395,9 @@ function Module:result()
 	})
 
 	if self.default_export == nil then
-		return freeze(exportmap)
+		return freeze(exportmap, true)
 	else
-		return freeze(self.default_export), freeze(exportmap)
+		return freeze(self.default_export), freeze(exportmap, true)
 	end
 end
 

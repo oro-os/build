@@ -50,6 +50,13 @@ local function unfreeze(obj)
 	return obj
 end
 
+-- You can pass a function that receives (k,v) to
+-- newindex, or simply pass `true` to forward writes
+-- to the underlying handler.
+--
+-- Why use freeze() in such a case? Since it correctly
+-- masks the metatable, and also prevents rawset()
+-- in scripting contexts.
 local function freeze(obj, newindex)
 	if obj == nil then return nil end
 
@@ -104,7 +111,15 @@ local function freeze(obj, newindex)
 
 	-- some callers might want to allow assigning new values
 	-- so switch out __newindex if that's the case
-	if newindex then
+	if newindex == true then
+		mt.__newindex = function(_, k, v)
+			if iscallable(omt.__newindex) then
+				omt.__newindex(obj, k, v)
+			elseif type(omt.__newindex) == 'table' then
+				omt.__newindex[k] = v
+			end
+		end
+	elseif newindex then
 		mt.__newindex = function(_, ...)
 			return newindex(...)
 		end
