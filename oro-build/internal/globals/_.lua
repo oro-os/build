@@ -27,6 +27,7 @@ local iscallable = require 'internal.util.iscallable'
 local tablefunc = require 'internal.util.tablefunc'
 local make_require = require 'internal.globals.require'
 local make_rule_factory = require 'internal.globals.rule'
+local make_phony_factory = require 'internal.globals.phony'
 local shallowclone = require 'internal.util.shallowclone'
 local Set = require 'internal.util.set'
 local List = require 'internal.util.list'
@@ -126,9 +127,14 @@ local function make_globals(cb)
 	assert(iscallable(cb.definerule), 'missing callback: definerule')
 	assert(iscallable(cb.definebuild), 'missing callback: definebuild')
 	oro.Rule = make_rule_factory(
+		-- onrule
 		function (...) return cb:definerule(...) end,
+		-- onbuild
 		function (...) return cb:definebuild(...) end
 	)
+
+	assert(iscallable(cb.makephony), 'missing callback: makephony')
+	oro.phony = make_phony_factory(function (...) return cb:makephony(...) end)
 
 	-- Add an unknown variable guard (to avoid pitfalls).
 	assert(getmetatable(G) == nil) -- sanity check

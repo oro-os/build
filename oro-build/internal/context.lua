@@ -85,7 +85,8 @@ local function make_context(opts)
 			rules = List(),
 			rulemap = {},
 			builds = List(),
-			ninja = Ninjafile()
+			ninja = Ninjafile(),
+			tags = 0
 		},
 		{
 			__index = Context,
@@ -346,9 +347,37 @@ function Context:definebuild(build)
 		'R'..ruleid,
 		build.options
 	)
+end
 
+function Context:makephony(arguments, deps)
 	assert(self.current_module ~= nil)
-	self.current_module.exports.all[nil] = {build.options.out}
+
+	if self.phony_proxy == nil then
+		self.phony_proxy = {
+			options = {
+				command = '$command',
+				description = 'RUN $command'
+			}
+		}
+
+		self:definerule(self.phony_proxy)
+	end
+
+	local tagid = self.tags
+	self.tags = self.tags + 1
+	-- We cheat a bit here. But it works.
+	local tagpath = self.script_globals.B('PHONY.' .. tostring(tagid))
+
+	self:definebuild {
+		rule = self.phony_proxy,
+		options = {
+			in_implicit = {deps},
+			command = {arguments},
+			out_implicit = {tagpath}
+		}
+	}
+
+	return freeze({tagpath})
 end
 
 function Context:makesourcepath(...)
