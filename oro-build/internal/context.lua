@@ -379,7 +379,7 @@ function Module:result()
 		__index = function(_, k)
 			local export = this.exports[k]
 			if export == nil then
-				error('no such export: ' .. k, 2)
+				error('no such export: ' .. k, 3)
 			end
 			return export
 		end,
