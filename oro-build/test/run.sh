@@ -26,7 +26,7 @@ runtest() {
 	# If there is an override script, run that. Otherwise,
 	# just run the build and do `all test`.
 	if [ -f "$1/test.sh" ]; then
-		(cd "$1" && "./test.sh")
+		(cd "$1" && bash -xeuo pipefail "./test.sh")
 	else
 		(cd "$1" && ./build.oro bin)
 		ninja -C "$1/bin" all test
@@ -44,3 +44,4 @@ runtest globals-type-iscallable
 runtest globals-startswith
 runtest globals-endswith
 runtest globals-syscall
+runtest syscall-init-depfile
