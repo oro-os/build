@@ -2,8 +2,18 @@
 set -euo pipefail
 cd "$(dirname "$0")"
 
+fail() {
+	printf '\x1b[91;1mFAIL:\x1b[m %s\n' "$*" >&2
+	return 1
+}
+
+export -f fail
+
 runtest() {
 	printf -- '----------- \x1b[95;1m%s\x1b[m -----------\n' "$1" >&2
+
+	# Clear out the bin directory
+	rm -rf "$1/bin"
 
 	# Circumvent re-building the harness over and over again.
 	if [ "$1" != "empty" ] && [ -f empty/bin/.oro/build ]; then
@@ -24,3 +34,4 @@ runtest() {
 # EMPTY MUST COME FIRST!
 runtest empty
 runtest print
+runtest builtin-touch
