@@ -12,6 +12,15 @@
 	Lua environment C support runtime
 */
 
+#ifndef _WIN32
+#	if defined(_POSIX_C_SOURCE) && _POSIX_C_SOURCE < 200809L
+#		undef _POSIX_C_SOURCE
+#	endif
+#	ifndef _POSIX_C_SOURCE
+#		define _POSIX_C_SOURCE 200809L
+#	endif
+#endif
+
 #include "./ext/lua/onelua.c"
 #include "./ext/luafilesystem/src/lfs.c"
 
@@ -39,16 +48,11 @@
 #	endif
 	typedef struct _stat oro_stat_t;
 #else
-#	if defined(_POSIX_C_SOURCE) && _POSIX_C_SOURCE < 200809L
-#		undef _POSIX_C_SOURCE
-#	endif
-#	ifndef _POSIX_C_SOURCE
-#		define _POSIX_C_SOURCE 200809L
-#	endif
 #	include <fcntl.h>
 #	include <dirent.h>
 #	include <sys/stat.h>
 #	include <sys/types.h>
+#	include <sys/time.h>
 #	include <unistd.h>
 #	define ORO_PLATFORM_PATH_SEP ":"
 #	define ORO_PLATFORM_PATH_DELIMS "/"
@@ -545,7 +549,7 @@ err:
 	return success;
 }
 
-int main(int argc, char *argv[]) {
+static int main_build(int argc, char *argv[]) {
 	int status;
 	const char *root_dir;
 	const char *bin_dir;
@@ -671,4 +675,57 @@ exit_close_state:
 	lua_close(L);
 exit:
 	return status;
+}
+
+static int main_touch(int argc, char *argv[]) {
+	assert(argc > 0);
+
+	int status = 0;
+
+	for (int i = 1; i < argc; i++) {
+		const char *filepath = argv[i];
+
+		int fd = open(filepath, O_WRONLY | O_CREAT | O_APPEND, 0644);
+		if (fd == -1) {
+			fprintf(stderr, "touch: open(): %s: %s\n", strerror(errno), filepath);
+			status = 1;
+			continue;
+		}
+
+		if (futimens(fd, NULL)) {
+			fprintf(stderr, "touch: futimes(): %s: %s\n", strerror(errno), filepath);
+			status = 1;
+		}
+
+		if (close(fd) != 0) {
+			fprintf(stderr, "touch: warning: close(): %s: %s\n", strerror(errno), filepath);
+			// We don't count this as an error.
+		}
+	}
+
+	return status;
+}
+
+int main(int argc, char *argv[]) {
+	if (argc == 0) {
+		fputs("error: no arg0\n", stderr);
+		return 2;
+	}
+
+	if (argc > 1 && strcmp(argv[1], "--syscall") == 0) {
+		argc -= 2;
+		argv += 2;
+
+		if (argc == 0) {
+			fputs("error: --syscall takes at least 1 argument (got none)\n", stderr);
+			return 2;
+		}
+
+		if (strcmp(argv[0], "touch") == 0) return main_touch(argc, argv);
+
+		fprintf(stderr, "error: unknown syscall: %s\n", argv[0]);
+		return 2;
+	}
+
+	return main_build(argc, argv);
 }

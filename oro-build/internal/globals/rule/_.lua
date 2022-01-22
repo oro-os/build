@@ -161,11 +161,17 @@ local function make_rule_generator(onrule, onbuild)
 		return freeze(rule)
 	end
 
+	local function builtin(importpath)
+		local factory = require(importpath)
+		return factory(onrule, onbuild)
+	end
+
 	return tablefunc(
 		make_rule,
 		{
 			escapeall = require 'internal.globals.rule.escapeall',
-			escape = require 'internal.globals.rule.escape'
+			escape = require 'internal.globals.rule.escape',
+			touch = builtin 'internal.globals.rule.touch'
 		}
 	)
 end

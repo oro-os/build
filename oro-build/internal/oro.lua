@@ -60,5 +60,6 @@ Oro.absbindir = P.resolve(Oro.bindir)
 Oro.absbuildscript = P.resolve(Oro.buildscript)
 Oro.srcdir = P.dirname(Oro.buildscript)
 Oro.abssrcdir = P.dirname(Oro.absbuildscript)
+Oro.absharnesspath = P.join(Oro.absbindir, '.oro/build')
 
 return Oro

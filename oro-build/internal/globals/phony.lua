@@ -16,6 +16,7 @@ local isinstance = require 'internal.util.isinstance'
 local Path = (require 'internal.path-factory').Path
 local List = require 'internal.util.list'
 local flat = require 'internal.util.flat'
+local freeze = require 'internal.util.freeze'
 
 local function make_phony_factory(makephony)
 	return function(...)
@@ -33,7 +34,7 @@ local function make_phony_factory(makephony)
 			error('must specify at least one argument to oro.phony{}', 2)
 		end
 
-		return makephony(arguments, deps)
+		return freeze(makephony(arguments, deps))
 	end
 end
 
