@@ -173,7 +173,8 @@ local function make_rule_generator(onrule, onbuild)
 			escape = require 'internal.globals.rule.escape',
 			touch = builtin 'internal.globals.rule.touch',
 			pass = builtin 'internal.globals.rule.pass',
-			fail = builtin 'internal.globals.rule.fail'
+			fail = builtin 'internal.globals.rule.fail',
+			echo = builtin 'internal.globals.rule.echo'
 		}
 	)
 end

@@ -706,6 +706,19 @@ static int main_touch(int argc, char *argv[]) {
 	return status;
 }
 
+static int main_echo(int argc, char *argv[]) {
+	assert(argc > 0);
+
+	const char *sep = "";
+	for (int i = 1; i < argc; i++) {
+		printf("%s%s", sep, argv[i]);
+		sep = " ";
+	}
+	putc('\n', stdout);
+
+	return 0;
+}
+
 int main(int argc, char *argv[]) {
 	if (argc == 0) {
 		fputs("error: no arg0\n", stderr);
@@ -724,6 +737,7 @@ int main(int argc, char *argv[]) {
 		if (strcmp(argv[0], "touch") == 0) return main_touch(argc, argv);
 		if (strcmp(argv[0], "pass") == 0) return 0;
 		if (strcmp(argv[0], "fail") == 0) return 1;
+		if (strcmp(argv[0], "echo") == 0) return main_echo(argc, argv);
 
 		fprintf(stderr, "error: unknown syscall: %s\n", argv[0]);
 		return 2;
