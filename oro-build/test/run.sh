@@ -12,13 +12,15 @@ export -f fail
 runtest() {
 	printf -- '----------- \x1b[95;1m%s\x1b[m -----------\n' "$1" >&2
 
-	# Clear out the bin directory
-	rm -rf "$1/bin"
+	if [ "$1" != "empty" ]; then
+		# Clear out the bin directory
+		rm -rf "$1/bin"
 
-	# Circumvent re-building the harness over and over again.
-	if [ "$1" != "empty" ] && [ -f empty/bin/.oro/build ]; then
-		mkdir -p "$1/bin/.oro"
-		cp -u empty/bin/.oro/build "$1/bin/.oro/build"
+		# Circumvent re-building the harness over and over again.
+		if [ -f empty/bin/.oro/build ]; then
+			mkdir -p "$1/bin/.oro"
+			cp -u empty/bin/.oro/build "$1/bin/.oro/build"
+		fi
 	fi
 
 	# If there is an override script, run that. Otherwise,
