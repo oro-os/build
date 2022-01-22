@@ -1,0 +1,13 @@
+#!/usr/bin/env ../../../build
+-- vim: set syntax=lua:
+
+assert(type.iscallable(string.endswith))
+
+assert(string.endswith('', ''))
+assert(string.endswith('hello', 'hello'))
+assert(string.endswith('hello', 'ello'))
+assert(string.endswith('this is a test: test', ' test: test'))
+assert(string.endswith('this is a test: test', ''))
+
+assert(not string.endswith('this is a test: test', 'foobar'))
+assert(not string.endswith('', 'foobar'))

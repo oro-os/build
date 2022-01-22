@@ -12,7 +12,8 @@
 --
 
 local function startswith(str, start)
-	return string.sub(str, 1, string.len(start)) == start
+	if str == '' then return start == '' end
+	return start == '' or string.sub(str, 1, string.len(start)) == start
 end
 
 return startswith
