@@ -35,3 +35,5 @@ runtest() {
 runtest empty
 runtest print
 runtest builtin-touch
+runtest builtin-pass
+runtest builtin-fail

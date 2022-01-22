@@ -1,0 +1,5 @@
+#!/usr/bin/env ../../../build
+-- vim: set syntax=lua:
+return oro.Rule.pass {
+	out = { B'dummy' }
+}
