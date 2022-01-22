@@ -722,6 +722,8 @@ int main(int argc, char *argv[]) {
 		}
 
 		if (strcmp(argv[0], "touch") == 0) return main_touch(argc, argv);
+		if (strcmp(argv[0], "pass") == 0) return 0;
+		if (strcmp(argv[0], "fail") == 0) return 1;
 
 		fprintf(stderr, "error: unknown syscall: %s\n", argv[0]);
 		return 2;

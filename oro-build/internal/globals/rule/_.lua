@@ -171,7 +171,9 @@ local function make_rule_generator(onrule, onbuild)
 		{
 			escapeall = require 'internal.globals.rule.escapeall',
 			escape = require 'internal.globals.rule.escape',
-			touch = builtin 'internal.globals.rule.touch'
+			touch = builtin 'internal.globals.rule.touch',
+			pass = builtin 'internal.globals.rule.pass',
+			fail = builtin 'internal.globals.rule.fail'
 		}
 	)
 end
