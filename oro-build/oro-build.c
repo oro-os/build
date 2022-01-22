@@ -31,6 +31,7 @@
 #include "./ext/subprocess.h/subprocess.h"
 #include "./ext/rapidstring/include/rapidstring.h"
 
+#include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
 #include <errno.h>
@@ -719,6 +720,57 @@ static int main_echo(int argc, char *argv[]) {
 	return 0;
 }
 
+static int main_init_depfile(int argc, char *argv[]) {
+	assert(argc > 0);
+
+	if (argc == 1) {
+		fputs("error: no output file given\n", stderr);
+		return 2;
+	}
+
+	if (argc > 2) {
+		fprintf(stderr, "error: expected exactly 1 argument; got %d\n", argc - 1);
+		return 2;
+	}
+
+	size_t len = strlen(argv[1]);
+	if (len == 0) {
+		fputs("error: filepath cannot be empty\n", stderr);
+		return 2;
+	}
+
+	int status = 1;
+
+	char *filepath = malloc(len + 3);
+	if (filepath == NULL) abort();
+
+	memcpy(filepath, argv[1], len);
+	filepath[len]   = '.';
+	filepath[len+1] = 'd';
+	filepath[len+2] = 0;
+
+	FILE *fd = fopen(filepath, "wb");
+
+	if (fd == NULL) {
+		fprintf(stderr, "error: fopen(): %s: %s\n", strerror(errno), filepath);
+		goto exit;
+	}
+
+	errno = 0;
+	if (fprintf(fd, "%s:\n", argv[1]) < 0) {
+		fprintf(stderr, "error: fprintf(): %s: %s\n", strerror(errno), filepath);
+		goto exit_close;
+	}
+
+	status = 0;
+
+exit_close:
+	fclose(fd);
+exit:
+	free(filepath);
+	return status;
+}
+
 int main(int argc, char *argv[]) {
 	if (argc == 0) {
 		fputs("error: no arg0\n", stderr);
@@ -738,6 +790,7 @@ int main(int argc, char *argv[]) {
 		if (strcmp(argv[0], "pass") == 0) return 0;
 		if (strcmp(argv[0], "fail") == 0) return 1;
 		if (strcmp(argv[0], "echo") == 0) return main_echo(argc, argv);
+		if (strcmp(argv[0], "init-depfile") == 0) return main_init_depfile(argc, argv);
 
 		fprintf(stderr, "error: unknown syscall: %s\n", argv[0]);
 		return 2;

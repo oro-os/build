@@ -1,0 +1,20 @@
+#!/usr/bin/env ../../../build
+-- vim: set syntax=lua:
+
+-- By default, we don't expose the init-depfile rule
+-- because it's not very useful for anyone outside
+-- of the internal library.
+--
+-- That being said, it's well-documented and can
+-- certainly by relied upon. You just have to
+-- construct the rule yourself (for now).
+--
+-- If you use it often enough and think it should
+-- be included as `Rule.initdepfile`, feel free to
+-- submit an issue/PR citing this comment. It'll
+-- probably be added.
+local rule = oro.Rule {
+	command = { oro.syscall 'init-depfile', '$out', '&&', oro.syscall 'touch', '$out' }
+}
+
+return rule { out = B'foo/bar', out_implicit = B'foo/bar.d' }

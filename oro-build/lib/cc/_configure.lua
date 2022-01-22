@@ -71,6 +71,14 @@ local function configure_compiler(compiler_command, skip_prelude)
 
 	local rule = oro.Rule {
 		command = {
+			-- Guarantee that the depfile exists.
+			-- This is to appease Ninja in cases
+			-- where the compiler decides not to
+			-- initialize a depfile because none
+			-- of its inputs are "sources".
+			oro.syscall 'init-depfile',
+			'$out',
+			'&&',
 			compiler_command_args,
 			variant.flag_output('$out'),
 			variant.flag_dep_output('$out.d'),
