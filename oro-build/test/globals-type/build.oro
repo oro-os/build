@@ -1,0 +1,13 @@
+#!/usr/bin/env ../../../build
+-- vim: set syntax=lua:
+
+local function realfunc() end
+
+assert(type('hello') == 'string')
+assert(type(1234) == 'number')
+assert(type(nil) == 'nil')
+assert(type({}) == 'table')
+assert(type(setmetatable({}, {__name='Foo'})) == 'table')
+assert(type(true) == 'boolean')
+assert(type(false) == 'boolean')
+assert(type(realfunc) == 'function')

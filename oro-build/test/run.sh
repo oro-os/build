@@ -39,4 +39,6 @@ runtest print
 runtest builtin-touch
 runtest builtin-pass
 runtest builtin-fail
+runtest globals-type
+runtest globals-type-iscallable
 runtest globals-syscall

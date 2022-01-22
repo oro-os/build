@@ -1,0 +1,18 @@
+#!/usr/bin/env ../../../build
+-- vim: set syntax=lua:
+
+local function fn() end
+local tfn = setmetatable({}, {__call=function() end})
+local tfnnocall = setmetatable({}, {})
+
+assert(type.iscallable(fn))
+assert(type.iscallable(tfn))
+
+assert(not type.iscallable(tfnnocall))
+assert(not type.iscallable({}))
+assert(not type.iscallable(1234))
+assert(not type.iscallable('hello'))
+assert(not type.iscallable(nil))
+assert(not type.iscallable(1234))
+assert(not type.iscallable(true))
+assert(not type.iscallable(false))
