@@ -325,15 +325,16 @@ function Context:importstd(import, opts)
 end
 
 function Context:definerule(rule)
-	local id = tostring(#self.rules)
+	if self.rulemap[rule] == nil then
+		local id = tostring(#self.rules)
+		self.rules[nil] = rule
+		self.rulemap[rule] = id
 
-	self.rules[nil] = rule
-	self.rulemap[rule] = id
-
-	self.ninja:add_rule(
-		'R'..id,
-		rule.options
-	)
+		self.ninja:add_rule(
+			'R'..id,
+			rule.options
+		)
+	end
 end
 
 function Context:definebuild(build)
@@ -354,19 +355,17 @@ function Context:definebuild(build)
 	end
 end
 
+local phony_proxy_rule = {
+	options = {
+		command = '$command',
+		description = 'RUN $command'
+	}
+}
+
 function Context:makephony(arguments, deps)
 	assert(self.current_module ~= nil)
 
-	if self.phony_proxy == nil then
-		self.phony_proxy = {
-			options = {
-				command = '$command',
-				description = 'RUN $command'
-			}
-		}
-
-		self:definerule(self.phony_proxy)
-	end
+	self:definerule(phony_proxy_rule)
 
 	local tagid = self.tags
 	self.tags = self.tags + 1
@@ -374,7 +373,7 @@ function Context:makephony(arguments, deps)
 	local tagpath = self.script_globals.B('PHONY.' .. tostring(tagid))
 
 	self:definebuild {
-		rule = self.phony_proxy,
+		rule = phony_proxy_rule,
 		options = {
 			in_implicit = {deps},
 			command = {arguments},
