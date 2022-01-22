@@ -118,6 +118,8 @@ local function make_globals(cb)
 	oro.Set = Set
 	oro.execute = Oro.execute
 
+	oro.syscall = require 'internal.globals.syscall'
+
 	function oro.searchpath(name, pathenv)
 		return Oro.searchpath(name, pathenv or G.E.PATH)
 	end

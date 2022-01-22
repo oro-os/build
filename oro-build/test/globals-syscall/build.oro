@@ -1,0 +1,21 @@
+#!/usr/bin/env ../../../build
+-- vim: set syntax=lua:
+local args = oro.syscall 'foobar'
+
+assert(type(args) == 'table')
+assert(#args > 0)
+
+-- We make sure it's frozen
+local function try()
+	args[1] = '-FOOBAR-'
+end
+
+local ok, err = pcall(try)
+
+assert(not ok)
+assert(string.endswith(err, 'cannot modify frozen object'))
+assert(args[1] ~= '-FOOBAR-')
+
+-- We don't directly test the arguments
+-- as the return value is only guaranteed
+-- to be a list of arguments.
