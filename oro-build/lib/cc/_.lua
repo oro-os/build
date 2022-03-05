@@ -68,6 +68,13 @@ local function cc_builder(_, opts)
 		end
 	end
 
+	if opts.visibility ~= nil then
+		if type(opts.visibility) ~= 'string' then
+			error('invalid `visibility` type: ' .. type(opts.visibility), 2)
+		end
+		cflags[nil] = compiler.variant.flag_visibility(opts.visibility)
+	end
+
 	if opts.define then
 		if type(opts.define) ~= 'table' then
 			error(

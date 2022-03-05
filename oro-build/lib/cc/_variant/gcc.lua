@@ -29,6 +29,18 @@ local gcc_variant = {
 	ldflag_release = '-s'
 }
 
+function gcc_variant.flag_visibility(level)
+	if level == 'public' then
+		return {'-fvisibility=default'}
+	elseif level == 'private' then
+		return {'-fvisibility=hidden'}
+	elseif level == 'protected' then
+		return {'-fvisibility=protected'}
+	else
+		error('unknown visibility type: ' .. level, 3)
+	end
+end
+
 function gcc_variant.flag_output(out)
 	return {'-o', out}
 end
