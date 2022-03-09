@@ -29,6 +29,10 @@ local gcc_variant = {
 	ldflag_release = '-s'
 }
 
+function gcc_variant.flag_include_directory(dir)
+	return '-I' .. tostring(dir)
+end
+
 function gcc_variant.flag_visibility(level)
 	if level == 'public' then
 		return {'-fvisibility=default'}

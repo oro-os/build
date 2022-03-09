@@ -99,6 +99,12 @@ local function cc_builder(_, opts)
 		end
 	end
 
+	if opts.include then
+		for dir in table.flat(opts.include) do
+			cflags[nil] = compiler.variant.flag_include_directory(dir)
+		end
+	end
+
 	if opts.out then
 		if type(opts.out) == 'table' then
 			if (
