@@ -16,6 +16,13 @@
 local DEFAULT_COMPILER = {} -- marker table, used as a key
 local rule_cache = {}
 
+local makeDepfile = oro.Rule {
+	command = {
+		oro.syscall 'init-depfile', '$out'
+	},
+	description = 'INIT DEPFILE $out'
+}
+
 local function configure_compiler(compiler_command, skip_prelude)
 	local compiler_command_args = string.split(tostring(compiler_command), ' \t\n')
 
@@ -71,14 +78,6 @@ local function configure_compiler(compiler_command, skip_prelude)
 
 	local rule = oro.Rule {
 		command = {
-			-- Guarantee that the depfile exists.
-			-- This is to appease Ninja in cases
-			-- where the compiler decides not to
-			-- initialize a depfile because none
-			-- of its inputs are "sources".
-			oro.syscall 'init-depfile',
-			'$out',
-			'&&',
 			compiler_command_args,
 			variant.flag_output('$out'),
 			variant.flag_dep_output('$out.d'),
@@ -89,9 +88,31 @@ local function configure_compiler(compiler_command, skip_prelude)
 		description = 'CC(' .. oro.Rule.escapeall(compiler_command) .. ') $out'
 	}
 
+	local function depfileRule_(_, opts)
+		for outfile in table.flat{opts.out} do
+			-- Guarantee that the depfile exists.
+			-- This is to appease Ninja in cases
+			-- where the compiler decides not to
+			-- initialize a depfile because none
+			-- of its inputs are "sources".
+			makeDepfile { out = outfile:append('.d') }
+			opts.in_implicit = { outfile:append('.d'), opts.in_implicit }
+			break
+		end
+
+		return rule(opts)
+	end
+
+	local depfileRule = setmetatable({}, {
+		__call = depfileRule_,
+		__index = rule,
+		__newindex = rule
+	})
+
 	print('\tOK')
+
 	return {
-		rule = rule,
+		rule = depfileRule,
 		variant_name = use_variant,
 		variant = variant,
 		compiler_command = compiler_command

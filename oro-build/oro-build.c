@@ -733,21 +733,13 @@ static int main_init_depfile(int argc, char *argv[]) {
 		return 2;
 	}
 
-	size_t len = strlen(argv[1]);
-	if (len == 0) {
+	const char *filepath = argv[1];
+	if (*filepath == 0) {
 		fputs("error: filepath cannot be empty\n", stderr);
 		return 2;
 	}
 
 	int status = 1;
-
-	char *filepath = malloc(len + 3);
-	if (filepath == NULL) abort();
-
-	memcpy(filepath, argv[1], len);
-	filepath[len]   = '.';
-	filepath[len+1] = 'd';
-	filepath[len+2] = 0;
 
 	FILE *fd = fopen(filepath, "wb");
 
@@ -767,7 +759,6 @@ static int main_init_depfile(int argc, char *argv[]) {
 exit_close:
 	fclose(fd);
 exit:
-	free(filepath);
 	return status;
 }
 
