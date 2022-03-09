@@ -14,7 +14,7 @@
 -- submit an issue/PR citing this comment. It'll
 -- probably be added.
 local rule = oro.Rule {
-	command = { oro.syscall 'init-depfile', '$out', '&&', oro.syscall 'touch', '$out' }
+	command = { oro.syscall 'init-depfile', '$out.d', '&&', oro.syscall 'touch', '$out' }
 }
 
 return rule { out = B'foo/bar', out_implicit = B'foo/bar.d' }

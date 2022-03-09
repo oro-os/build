@@ -733,9 +733,15 @@ static int main_init_depfile(int argc, char *argv[]) {
 		return 2;
 	}
 
-	const char *filepath = argv[1];
+	char *filepath = argv[1];
 	if (*filepath == 0) {
 		fputs("error: filepath cannot be empty\n", stderr);
+		return 2;
+	}
+
+	size_t len = strlen(filepath);
+	if (len < 3 || filepath[len-1] != 'd' || filepath[len-2] != '.') {
+		fprintf(stderr, "error: filepath must end with '.d': %s\n", filepath);
 		return 2;
 	}
 
@@ -748,8 +754,10 @@ static int main_init_depfile(int argc, char *argv[]) {
 		goto exit;
 	}
 
+	filepath[len - 2] = 0;
+
 	errno = 0;
-	if (fprintf(fd, "%s:\n", argv[1]) < 0) {
+	if (fprintf(fd, "%s:\n", filepath) < 0) {
 		fprintf(stderr, "error: fprintf(): %s: %s\n", strerror(errno), filepath);
 		goto exit_close;
 	}
