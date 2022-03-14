@@ -52,5 +52,6 @@ return {
 	padright = pad.right,
 	startswith = require 'internal.util.startswith',
 	endswith = require 'internal.util.endswith',
+	prefix = require 'internal.util.prefix',
 	split = Oro.split -- implemented in C since it's actually easier in C
 }

@@ -1,0 +1,44 @@
+#!/usr/bin/env ../../../build
+-- vim: set syntax=lua:
+
+assert(type.iscallable(string.prefix))
+
+assert(
+	string.prefix('', '')
+	== ''
+)
+
+assert(
+	string.prefix(' ', '')
+	== ' '
+)
+
+assert(
+	string.prefix(' ', ' ')
+	== '  '
+)
+
+assert(
+	string.prefix('foo', 'bar')
+	== 'barfoo'
+)
+
+assert(
+	string.prefix('foo\nbar', '>')
+	== '>foo\n>bar'
+)
+
+assert(
+	string.prefix('\nfoo\nbar\nbaz\n', '')
+	== '\nfoo\nbar\nbaz\n'
+)
+
+assert(
+	string.prefix('\nfoo\nbar\nbaz\n\n', '!!!')
+	== '!!!\n!!!foo\n!!!bar\n!!!baz\n!!!\n!!!'
+)
+
+assert(
+	string.prefix('foo bar\n\nbaz qux\nqix', '>> ')
+	== '>> foo bar\n>> \n>> baz qux\n>> qix'
+)

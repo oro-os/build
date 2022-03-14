@@ -44,4 +44,5 @@ runtest globals-type-iscallable
 runtest globals-startswith
 runtest globals-endswith
 runtest globals-syscall
+runtest globals-prefix
 runtest syscall-init-depfile
