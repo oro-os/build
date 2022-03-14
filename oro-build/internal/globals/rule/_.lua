@@ -174,7 +174,8 @@ local function make_rule_generator(onrule, onbuild)
 			touch = builtin 'internal.globals.rule.touch',
 			pass = builtin 'internal.globals.rule.pass',
 			fail = builtin 'internal.globals.rule.fail',
-			echo = builtin 'internal.globals.rule.echo'
+			echo = builtin 'internal.globals.rule.echo',
+			cp = builtin 'internal.globals.rule.cp'
 		}
 	)
 end

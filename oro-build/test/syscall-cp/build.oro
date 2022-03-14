@@ -1,0 +1,8 @@
+#!/usr/bin/env ../../../build
+-- vim: set syntax=lua:
+
+return {
+	oro.Rule.cp { out = B'empty', S'empty' },
+	oro.Rule.cp { out = B'hello', S'hello' },
+	oro.Rule.cp { out = B'multi', S'hello', S'empty' }
+}

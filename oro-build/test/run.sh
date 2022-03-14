@@ -50,3 +50,4 @@ runtest globals-norm-singleinput
 runtest globals-norm-singleinputopt
 runtest path-basename
 runtest syscall-init-depfile
+runtest syscall-cp

@@ -54,7 +54,11 @@
 #	include <sys/stat.h>
 #	include <sys/types.h>
 #	include <sys/time.h>
+#	include <sys/sendfile.h>
 #	include <unistd.h>
+#	ifndef O_PATH
+#		define O_PATH 010000000
+#	endif
 #	define ORO_PLATFORM_PATH_SEP ":"
 #	define ORO_PLATFORM_PATH_DELIMS "/"
 #	define oro_stat stat
@@ -770,6 +774,129 @@ exit:
 	return status;
 }
 
+static int cp_file_outfd(const char *from, int outfd) {
+	int status = 1;
+
+	FILE *inf = fopen(from, "rb");
+	if (inf == NULL) {
+		fprintf(stderr, "fopen(rb): %s: %s\n", strerror(errno), from);
+		goto exit;
+	}
+
+	int infd = fileno(inf);
+	assert(infd != -1); // should never happen.
+
+	struct stat stats;
+	if (fstat(infd, &stats) != 0) {
+		fprintf(stderr, "fstat(): %s: %s\n", strerror(errno), from);
+		goto exit_close_inf;
+	}
+
+	off_t offset = 0;
+	size_t remaining = stats.st_size;
+
+	while (offset >= 0 && remaining > 0) {
+		// If this is failing, it might mean you're on
+		// a kernel older than 2.6.33. Please open an
+		// issue if this is really a blocker for you.
+		// Likewise, a PR that adequately detected
+		// such a case and performed a byte-buffer copy
+		// would be accepted.
+		ssize_t sent = sendfile(outfd, infd, &offset, remaining);
+		if (sent < 0) {
+			fprintf(stderr, "sendfile(): %s: %s \n", strerror(errno), from);
+			goto exit_close_inf;
+		}
+
+		remaining -= (size_t) sent;
+		offset += sent;
+	}
+
+	if (remaining > 0) {
+		fprintf(stderr, "sendfile(): unexpected error (remaining > 0): %s\n", from);
+		goto exit_close_inf;
+	}
+
+	status = 0;
+
+exit_close_inf:
+	fclose(inf);
+exit:
+	return status;
+}
+
+static int cp_file(const char *from, const char *to) {
+#ifdef _WIN32
+	// PR welcome!
+#	error "`--syscall cp` is unsupported on Windows"
+#else
+	int status = 1;
+
+	FILE *outf = fopen(to, "wb");
+	if (outf == NULL) {
+		fprintf(stderr, "fopen(wb): %s: %s\n", strerror(errno), to);
+		goto exit;
+	}
+
+	int outfd = fileno(outf);
+	assert(outfd != -1); // should never happen.
+
+	status = cp_file_outfd(from, outfd);
+
+	fclose(outf);
+exit:
+	return status;
+#endif
+}
+
+static int main_cp(int argc, char *argv[]) {
+	assert(argc > 0);
+
+	if (argc < 3) {
+		fputs("error: usage: cp <inputs[...]> <output[_directory]>\n", stderr);
+		return 2;
+	}
+
+	int failed = 0;
+
+	if (argc == 3) {
+		failed = cp_file(argv[1], argv[2]) != 0;
+	} else {
+		assert(argc > 3);
+
+		const char *dirpath = argv[argc - 1];
+		int outdir = open(dirpath, O_DIRECTORY | O_PATH);
+
+		if (outdir == -1) {
+			fprintf(stderr, "open(DIRECTORY): %s: %s\n", strerror(errno), dirpath);
+			failed = 1;
+		} else {
+			for (int i = 1, last = argc - 1; i < last; i++) {
+				const char *filename = argv[i];
+				const char *base = strrchr(filename, '/');
+				base = base ? &base[1] : filename;
+
+				int outfd = openat(outdir, base, O_WRONLY | O_CREAT, S_IRUSR | S_IWUSR | S_IRGRP | S_IROTH);
+				if (outfd == -1) {
+					fprintf(stderr, "openat(): %s: %s/%s\n", strerror(errno), dirpath, base);
+					failed = 1;
+					continue;
+				}
+
+				if (cp_file_outfd(filename, outfd) != 0) {
+					failed = 1;
+				}
+
+				close(outfd);
+			}
+
+			close(outdir);
+		}
+	}
+
+	return failed;
+}
+
 int main(int argc, char *argv[]) {
 	if (argc == 0) {
 		fputs("error: no arg0\n", stderr);
@@ -790,6 +917,7 @@ int main(int argc, char *argv[]) {
 		if (strcmp(argv[0], "fail") == 0) return 1;
 		if (strcmp(argv[0], "echo") == 0) return main_echo(argc, argv);
 		if (strcmp(argv[0], "init-depfile") == 0) return main_init_depfile(argc, argv);
+		if (strcmp(argv[0], "cp") == 0) return main_cp(argc, argv);
 
 		fprintf(stderr, "error: unknown syscall: %s\n", argv[0]);
 		return 2;
