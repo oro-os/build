@@ -7,3 +7,15 @@ assert(tostring(p) == './foo/buzz/bar')
 assert(tostring(p:basename()) == 'bar')
 assert(tostring(p:basename('baz')) == './foo/buzz/baz')
 assert(tostring(p:basename('baz/qux')) == './foo/buzz/baz/qux')
+
+assert(oro.ispath(S'foo'))
+assert(oro.ispath(S'foo':basename('bar')))
+
+-- A specific failure the kernel faced at one point in time.
+local iso = B'foo.iso'
+assert(tostring(iso) == './foo.iso')
+assert(tostring(iso:append('.flag')) == './foo.iso.flag')
+assert(tostring(iso:append('.flag'):basename()) == 'foo.iso.flag')
+assert(tostring('.' .. iso:append('.flag'):basename()) == '.foo.iso.flag')
+assert(tostring(iso:basename('.foo.iso.flag')) == './.foo.iso.flag')
+assert(tostring(iso:basename('.' .. iso:append('.flag'):basename())) == './.foo.iso.flag')

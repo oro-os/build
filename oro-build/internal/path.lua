@@ -14,10 +14,34 @@
 require 'path.fs'
 
 local unpack = require 'internal.util.unpack'
+local List = require 'internal.util.list'
 
 local P = setmetatable({}, {
 	__index = (require 'path').new('/')
 })
+
+local real_join = P.join
+function P.join(...)
+	-- Annoyingly, the builtin `join` function
+	-- treats empty strings as valid paths.
+	-- This causes P.join(maybezerolength, 'foo')
+	-- as '/foo', which wreaks havoc on the path
+	-- library - namely, when using P.dirname(),
+	-- which returns an empty first leaf for
+	-- non-nested relative paths.
+	local leafs = List()
+
+	for _, v in ipairs{...} do
+		if v ~= nil then
+			local vs = tostring(v)
+			if #vs > 0 then
+				leafs[nil] = vs
+			end
+		end
+	end
+
+	return real_join(unpack(leafs))
+end
 
 local real_normalize = P.normalize
 function P.normalize(pth)
