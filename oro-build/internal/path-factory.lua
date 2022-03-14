@@ -54,6 +54,20 @@ function Path:base(s)
 	end
 end
 
+function Path:basename(s)
+	if s == nil then
+		return P.basename(self._path)
+	else
+		return setmetatable(
+			{
+				_path = P.join(P.dirname(self._path), pathstring(s)),
+				_base = self._base
+			},
+			Path__mt
+		)
+	end
+end
+
 function Path:append(s)
 	return self:path(self._path .. pathstring(s))
 end

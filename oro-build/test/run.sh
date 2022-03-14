@@ -48,4 +48,5 @@ runtest globals-norm-single
 runtest globals-norm-singleopt
 runtest globals-norm-singleinput
 runtest globals-norm-singleinputopt
+runtest path-basename
 runtest syscall-init-depfile

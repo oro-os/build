@@ -1,0 +1,9 @@
+#!/usr/bin/env ../../../build
+-- vim: set syntax=lua:
+
+local p = B'foo/buzz/bar'
+
+assert(tostring(p) == './foo/buzz/bar')
+assert(tostring(p:basename()) == 'bar')
+assert(tostring(p:basename('baz')) == './foo/buzz/baz')
+assert(tostring(p:basename('baz/qux')) == './foo/buzz/baz/qux')
