@@ -96,7 +96,7 @@ local function configure_compiler(compiler_command, skip_prelude)
 			-- initialize a depfile because none
 			-- of its inputs are "sources".
 			makeDepfile { out = outfile:append('.d') }
-			opts.in_implicit = { outfile:append('.d'), opts.in_implicit }
+			opts.in_order = { outfile:append('.d'), opts.in_order }
 			break
 		end
 
