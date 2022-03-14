@@ -1,0 +1,30 @@
+#!/usr/bin/env ../../../build
+-- vim: set syntax=lua:
+
+assert(type.iscallable(oro.norm.single))
+
+local opts = {
+	foo = 'OK',
+	bar = {{'OK'}, nil},
+	qux = {'first', 'second'},
+	qix = {}
+}
+
+local function passes(name, v)
+	if v == nil then v = 'OK' end
+	local ok, res = pcall(oro.norm.single, opts, name)
+	assert(ok, 'failed: '..tostring(res))
+	assert(res == v, 'unexpected value: '..tostring(res))
+end
+
+local function fails(name, err)
+	local ok, realerr = pcall(oro.norm.single, opts, name)
+	assert(not ok, 'expected failure')
+	assert(err == realerr, 'unexpected error: '..tostring(realerr))
+end
+
+passes 'foo'
+passes 'bar'
+fails('doesntexist', 'must specify exactly one `doesntexist`')
+fails('qix', 'must specify exactly one `qix`')
+fails('qux', 'cannot specify more than one `qux`')

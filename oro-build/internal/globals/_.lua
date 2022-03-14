@@ -138,6 +138,8 @@ local function make_globals(cb)
 	assert(iscallable(cb.makephony), 'missing callback: makephony')
 	oro.phony = make_phony_factory(function (...) return cb:makephony(...) end)
 
+	oro.norm = require 'internal.globals.normlib'
+
 	-- Add an unknown variable guard (to avoid pitfalls).
 	assert(getmetatable(G) == nil) -- sanity check
 	assert(iscallable(cb.getexport), 'missing callback: getexport')

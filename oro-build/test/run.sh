@@ -1,7 +1,6 @@
 #!/usr/bin/env bash
 set -euo pipefail
 cd "$(dirname "$0")"
-
 fail() {
 	printf '\x1b[91;1mFAIL:\x1b[m %s\n' "$*" >&2
 	return 1
@@ -45,4 +44,6 @@ runtest globals-startswith
 runtest globals-endswith
 runtest globals-syscall
 runtest globals-prefix
+runtest globals-norm-single
+runtest globals-norm-singleopt
 runtest syscall-init-depfile
