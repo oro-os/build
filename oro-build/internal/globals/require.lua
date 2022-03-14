@@ -14,6 +14,8 @@
 -- to augment/override the child module.
 --
 
+local typename = require 'internal.util.typename'
+
 local function make_require(onlocal, onstdlib)
 	local function module_require(opts, ...)
 		local import = nil
@@ -41,7 +43,7 @@ local function make_require(onlocal, onstdlib)
 			if type(opts[1]) ~= 'string' then
 				error(
 					'require{} (with an options argument or curly-brace invocation) must have a string as first parameter; got '
-					.. type(opts[1]),
+					.. typename(opts[1]),
 					2
 				)
 			end
@@ -51,7 +53,7 @@ local function make_require(onlocal, onstdlib)
 		else
 			error(
 				'require() takes either a single string or a table (or curly-brace invocation, e.g. `require{}`); got '
-				.. type(opts),
+				.. typename(opts),
 				2
 			)
 		end

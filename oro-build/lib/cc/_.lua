@@ -70,7 +70,7 @@ local function cc_builder(_, opts)
 
 	if opts.visibility ~= nil then
 		if type(opts.visibility) ~= 'string' then
-			error('invalid `visibility` type: ' .. type(opts.visibility), 2)
+			error('invalid `visibility` type: ' .. type.name(opts.visibility), 2)
 		end
 		cflags[nil] = compiler.variant.flag_visibility(opts.visibility)
 	end
@@ -79,7 +79,7 @@ local function cc_builder(_, opts)
 		if type(opts.define) ~= 'table' then
 			error(
 				'`define` parameter must be a table; got '
-				.. type(opts.define),
+				.. type.name(opts.define),
 				2
 			)
 		end
@@ -120,7 +120,7 @@ local function cc_builder(_, opts)
 		elseif type(opts.out) ~= 'string' then
 			error(
 				'optional `out` parameter for \'cc\' must either be a string, table, or path; got '
-				.. type(opts.out),
+				.. type.name(opts.out),
 				2
 			)
 		end
@@ -145,7 +145,7 @@ local function cc_builder(_, opts)
 			else
 				error(
 					'compilation inputs must be (lists of) Paths; got '
-					.. type(v)
+					.. type.name(v)
 					.. ': '
 					.. tostring(v),
 					2

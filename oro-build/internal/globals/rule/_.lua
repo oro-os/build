@@ -19,6 +19,7 @@ local shallowclone = require 'internal.util.shallowclone'
 local tablefunc = require 'internal.util.tablefunc'
 local Path = (require 'internal.path-factory').Path
 local isinstance = require 'internal.util.isinstance'
+local typename = require 'internal.util.typename'
 
 -- https://ninja-build.org/manual.html
 local allowed_rule_keys = Set {
@@ -50,7 +51,7 @@ function Rule:clone(opts)
 
 	assert(
 		type(opts) == 'table',
-		'Rule options (first parameter, or braced invocation) must be table; got ' .. type(opts)
+		'Rule options (first parameter, or braced invocation) must be table; got ' .. typename(opts)
 	)
 
 	for k,v in pairs(opts) do
@@ -68,7 +69,7 @@ local function make_rule_generator(onrule, onbuild)
 	local function make_rule(opts)
 		assert(
 			type(opts) == 'table',
-			'Rule options (first parameter, or braced invocation) must be table; got ' .. type(opts)
+			'Rule options (first parameter, or braced invocation) must be table; got ' .. typename(opts)
 		)
 
 		local rule = nil
@@ -86,7 +87,7 @@ local function make_rule_generator(onrule, onbuild)
 		local function make_build(opts)
 			assert(
 				type(opts) == 'table',
-				'Build options (first parameter, or braced invocation) must be table; got ' .. type(opts)
+				'Build options (first parameter, or braced invocation) must be table; got ' .. typename(opts)
 			)
 
 			-- Guarantee that `out` exists for the build object's
@@ -112,7 +113,7 @@ local function make_rule_generator(onrule, onbuild)
 				else
 					error(
 						'unexpected sequential value; expected Path (from `S` or `B`) or a Build object; got '
-						.. type(v),
+						.. typename(v),
 						2
 					)
 				end

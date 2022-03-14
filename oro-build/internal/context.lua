@@ -24,6 +24,7 @@ local make_path_factory = require 'internal.path-factory'
 local P = require 'internal.path'
 local freeze = require 'internal.util.freeze'
 local Ninjafile = require 'internal.ninja'
+local typename = require 'internal.util.typename'
 
 local Context = {}
 local Module = {}
@@ -133,7 +134,7 @@ function Context:setenv(name, value)
 	assert(self.current_module ~= nil)
 
 	if type(name) ~= 'string' then
-		error('environment variable names must be strings (got ' .. type(name) .. ')', 2)
+		error('environment variable names must be strings (got ' .. typename(name) .. ')', 2)
 	end
 
 	if value ~= nil and type(value) ~= 'string' then
@@ -141,7 +142,7 @@ function Context:setenv(name, value)
 			'environment variable values must be nil or string (when setting `'
 			.. name
 			.. '` with value of type \''
-			.. type(value)
+			.. typename(value)
 			.. '\')',
 			2
 		)
@@ -159,7 +160,7 @@ function Context:setconfig(name, value)
 	assert(self.current_module ~= nil)
 
 	if type(name) ~= 'string' then
-		error('config variable name must be string (got ' .. type(name) .. ')', 2)
+		error('config variable name must be string (got ' .. typename(name) .. ')', 2)
 	end
 
 	self.current_module.config[name] = value
@@ -169,7 +170,7 @@ function Context:export(name, value)
 	assert(self.current_module ~= nil)
 
 	if type(name) ~= 'string' then
-		error('export names must be strings (got ' .. type(name) .. ')', 2)
+		error('export names must be strings (got ' .. typename(name) .. ')', 2)
 	end
 
 	if name == 'all' then
