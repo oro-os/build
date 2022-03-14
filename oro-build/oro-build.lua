@@ -112,12 +112,20 @@ for k,v in pairs(rootphonies) do
 end
 
 -- Make any root default export(s) the default target(s)
+local has_defaults = false
 if ctx.root_module.default_export ~= nil then
 	for v in flat(ctx.root_module.default_export) do
 		if isinstance(v, Path) then
+			has_defaults = true
 			ctx.ninja:add_default(v)
 		end
 	end
+end
+
+-- Otherwise, default to the 'all' phony. This prevents
+-- any other phonies from also running by default.
+if not has_defaults then
+	ctx.ninja:add_default('all')
 end
 
 -- Enumerate all configuration dependencies
