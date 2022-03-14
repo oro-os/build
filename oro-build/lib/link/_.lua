@@ -30,6 +30,7 @@ local function link_exe_builder(opts)
 		end
 
 		new_linker.rule = new_linker.rule:clone {
+			depfile = false,
 			description = (
 				'LINK EXE('
 				.. oro.Rule.escapeall(new_linker.compiler_command)

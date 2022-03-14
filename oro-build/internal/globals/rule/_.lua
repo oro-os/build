@@ -59,7 +59,12 @@ function Rule:clone(opts)
 			error('invalid Rule{} option: ' .. tostring(k), 2)
 		end
 
-		new_opts[k] = flatten_to_strings(v)
+		if v == false then
+			-- `false` unsets
+			new_opts[k] = nil
+		else
+			new_opts[k] = flatten_to_strings(v)
+		end
 	end
 
 	return self.constructor(new_opts)
