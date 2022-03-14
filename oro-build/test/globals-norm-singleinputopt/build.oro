@@ -1,0 +1,23 @@
+#!/usr/bin/env ../../../build
+-- vim: set syntax=lua:
+
+assert(type.iscallable(oro.norm.singleinputopt))
+
+local function passes(opts, v)
+	local ok, res = pcall(oro.norm.singleinputopt, opts)
+	assert(ok, 'failed: '..tostring(res))
+	assert(res == v, 'unexpected value: '..tostring(res))
+end
+
+local function fails(opts, err)
+	local ok, realerr = pcall(oro.norm.singleinputopt, opts)
+	assert(not ok, 'expected failure')
+	assert(err == realerr, 'unexpected error: '..tostring(realerr))
+end
+
+passes({'foo'}, 'foo')
+passes({{{'bar'}}}, 'bar')
+passes({baz='buzz', {{'bar'}}}, 'bar')
+passes({baz='buzz', {{}}}, nil)
+passes({}, nil)
+fails({'foo', {{'bar'}}}, 'cannot specify more than one input')

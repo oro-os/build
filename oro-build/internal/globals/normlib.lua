@@ -45,7 +45,37 @@ local function single(opts, name)
 	return res
 end
 
+local function singleinputopt_(opts, scopeoff)
+	local res = nil
+
+	for v in flat{opts} do
+		if res ~= nil then
+			error('cannot specify more than one input', ERRSCOPE + scopeoff)
+		end
+
+		res = v
+	end
+
+	return res
+end
+
+local function singleinputopt(opts)
+	return singleinputopt_(opts, 0)
+end
+
+local function singleinput(opts)
+	local res = singleinputopt_(opts, 1)
+
+	if res == nil then
+		error('must specify exactly one input', ERRSCOPE)
+	end
+
+	return res
+end
+
 return {
 	single = single,
-	singleopt = singleopt
+	singleopt = singleopt,
+	singleinput = singleinput,
+	singleinputopt = singleinputopt
 }
