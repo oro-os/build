@@ -40,6 +40,7 @@ runtest builtin-pass
 runtest builtin-fail
 runtest globals-type
 runtest globals-type-iscallable
+runtest globals-type-name
 runtest globals-startswith
 runtest globals-endswith
 runtest globals-syscall

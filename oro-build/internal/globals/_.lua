@@ -81,7 +81,8 @@ local function make_globals(cb)
 		{
 			isnuclear = require 'internal.util.isnuclear',
 			isinstance = require 'internal.util.isinstance',
-			iscallable = iscallable
+			iscallable = iscallable,
+			name = require 'internal.util.typename'
 		}
 	)
 

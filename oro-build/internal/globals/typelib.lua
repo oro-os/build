@@ -10,6 +10,11 @@
 --
 -- Nuclear object type tests
 --
+-- NOTE: To be clear, this has nothing to do with
+-- NOTE: the `type` builtin extensions. These are
+-- NOTE: helper utilities that live on the global
+-- NOTE: `oro` object and check for Oro-specific types.
+--
 
 local isinstance = require 'internal.util.isinstance'
 local rulelib = require 'internal.globals.rule'

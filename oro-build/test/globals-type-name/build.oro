@@ -1,0 +1,19 @@
+#!/usr/bin/env ../../../build
+-- vim: set syntax=lua:
+
+local function fn() end
+local tfn = setmetatable({}, {__call=function() end})
+local named = setmetatable({}, {__name='Foobar'})
+
+assert(type.name(fn) == 'function')
+assert(type.name(tfn) == 'table')
+assert(type.name({1, 2, 3}) == 'table')
+assert(type.name('hello') == 'string')
+assert(type.name(1234) == 'number')
+assert(type.name(nil) == 'nil')
+assert(type.name(true) == 'boolean')
+assert(type.name(false) == 'boolean')
+assert(type.name(named) == 'Foobar')
+assert(type.name(S'foo') == 'Path')
+assert(type.name(B'bar') == 'Path')
+assert(type.name(oro.Rule{command={'echo'}}) == 'Rule')
