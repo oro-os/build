@@ -18,18 +18,21 @@ local tablefunc = require 'internal.util.tablefunc'
 local isinstance = require 'internal.util.isinstance'
 local List = require 'internal.util.list'
 local P = require 'internal.path'
+local typename = require 'internal.util.typename'
 
 local Path = {}
 local Path__mt = nil
 
-local function pathstring(x, allow_base)
-	-- TODO we kind of naively assume that a function
-	-- TODO here is a path factory; we should probably
-	-- TODO have a PathFactory metatable and isinstance()
-	-- TODO check it.
-	assert(allow_base or type(s) ~= 'function', 'cannot pass a path factory (`S` or `B`) to :path()')
-	if type(x) == 'function' then return x('.')._base end
-	return isinstance(x, Path) and x[prop] or x
+local function pathstring(x, prop)
+	if isinstance(x, Path) then
+		return x[prop]
+	end
+
+	if type(x) ~= 'string' then
+		error('path argument must either be another Path or a string', 2)
+	end
+
+	return x
 end
 
 function Path:path(s)
@@ -37,7 +40,7 @@ function Path:path(s)
 		return self._path
 	else
 		return setmetatable(
-			{ _path = pathstring(s), _base = self._base },
+			{ _path = pathstring(s, '_path'), _base = self._base },
 			Path__mt
 		)
 	end
@@ -48,7 +51,7 @@ function Path:base(s)
 		return self._base
 	else
 		return setmetatable(
-			{ _path = self._path, _base = pathstring(s, true) },
+			{ _path = self._path, _base = pathstring(s, '_base') },
 			Path__mt
 		)
 	end
@@ -60,7 +63,7 @@ function Path:basename(s)
 	else
 		return setmetatable(
 			{
-				_path = P.join(P.dirname(self._path), pathstring(s)),
+				_path = P.join(P.dirname(self._path), pathstring(s, '_path')),
 				_base = self._base
 			},
 			Path__mt
@@ -69,7 +72,7 @@ function Path:basename(s)
 end
 
 function Path:append(s)
-	return self:path(self._path .. pathstring(s))
+	return self:path(self._path .. pathstring(s, '_path'))
 end
 
 function Path:ext(s)
@@ -77,6 +80,9 @@ function Path:ext(s)
 	if s == nil then
 		return ext
 	else
+		if type(s) ~= 'string' then
+			error('argument to :ext() must be a string; got '..typename(s), 1)
+		end
 		return self:path(base .. s)
 	end
 end
