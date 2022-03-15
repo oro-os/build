@@ -423,9 +423,19 @@ function Module:result()
 	local this = self
 	local exportmap = setmetatable({}, {
 		__index = function(_, k)
+			local fallback = type(k) == 'table'
+			local v = nil
+			if fallback then
+				v = k[2]
+				k = k[1]
+			end
 			local export = this.exports[k]
 			if export == nil then
-				error('no such export: ' .. k, 3)
+				if fallback then
+					return v
+				else
+					error('no such export: ' .. tostring(k), 3)
+				end
 			end
 			return export
 		end,
