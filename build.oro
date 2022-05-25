@@ -1,0 +1,42 @@
+#!./build
+-- vim: syntax=lua:
+--
+--  __   __   __
+-- /  \ |__) /  \
+-- \__/ |  \ \__/
+--
+-- ORO BUILD GENERATOR
+-- Copyright (c) 2021-2022, Josh Junon
+-- License TBD
+--
+
+-- Bootstrap script
+--
+-- This build configuration produces
+-- a single `orb` executable suitable
+-- for inclusion in an Orb-enabled project.
+
+cc = require 'cc'
+link = require 'link'
+
+exe = link.exe {
+	out = B'orb',
+	ldflags = {
+		'-lm'
+	},
+
+	cc {
+		warn = 'strict',
+		define = {
+			MAKE_LIB = 1,
+			LUA_ANSI = 1
+		},
+		include = {
+			S'oro-build/ext/lua'
+		},
+
+		S'oro-build/oro-build.c'
+	}
+}
+
+test = oro.phony { S'oro-build/test/run.sh' }
