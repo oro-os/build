@@ -48,7 +48,7 @@ if [ ! -f "$BIN_DIR/.oro/build" ] || test "$ROOT_DIR/oro-build.c" -nt "$BIN_DIR/
 		comp_flags="-O0 -g3"
 	fi
 
-	"${CC}" -o "$BIN_DIR/.oro/build" ${comp_flags} -DMAKE_LIB=1 -DLUA_ANSI=1 -Wall -Wextra -Werror -I"$ROOT_DIR/ext/lua" "$ROOT_DIR/oro-build.c" -lm
+	"${CC}" -o "$BIN_DIR/.oro/build" ${comp_flags} -Wall -Wextra -Werror -I"$ROOT_DIR/ext/lua" "$ROOT_DIR/oro-build.c" -lm
 fi
 
 # TODO(qix-) If someone knows a better way to DRY this up

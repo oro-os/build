@@ -16,26 +16,65 @@
 -- a single `orb` executable suitable
 -- for inclusion in an Orb-enabled project.
 
+-- NOTE: There is currently a deficiency here;
+-- NOTE: the script builder does NOT detect
+-- NOTE: changes to detected inputs or to directory
+-- NOTE: structure changes. This is a side-effect
+-- NOTE: of the glob-based discovery, and is a
+-- NOTE: known issue. You should `ninja -t clean`
+-- NOTE: prior to rebuilds until this is fixed.
+
 cc = require 'cc'
 link = require 'link'
 
-exe = link.exe {
-	out = B'orb',
-	ldflags = {
-		'-lm'
-	},
+local orbluac = link.exe {
+	out = B'orb-luac',
+	ldflags = { '-lm' },
 
 	cc {
 		warn = 'strict',
 		define = {
-			MAKE_LIB = 1,
 			LUA_ANSI = 1
 		},
 		include = {
 			S'oro-build/ext/lua'
 		},
 
-		S'oro-build/oro-build.c'
+		S'oro-luac/main.c'
+	}
+}
+
+local run_luac = oro.Rule {
+	command = { orbluac, '$root', '$prefix', '$out', '$debug' },
+	description = 'ORB LUAC $out'
+}
+
+local bundled_scripts_path = B'orb-scripts.c'
+
+exe = link.exe {
+	out = B'orb',
+	ldflags = { '-lm' },
+
+	cc {
+		warn = 'strict',
+		include = {
+			S'oro-build/ext/lua'
+		},
+		define = {
+			ORB_BUNDLED_SCRIPTS = bundled_scripts_path
+		},
+
+		S'oro-build/oro-build.c',
+
+		in_implicit = {
+			run_luac {
+				in_implicit = orbluac,
+				out = bundled_scripts_path,
+				prefix = '@',
+				debug = tostring(tonumber((C.RELEASE or '0') == '0')),
+				root = S'oro-build'
+			}
+		}
 	}
 }
 

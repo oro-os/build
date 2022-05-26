@@ -21,8 +21,12 @@
 #	endif
 #endif
 
+#define MAKE_LIB 1
+#define LUA_ANSI 1
 #include "./ext/lua/onelua.c"
 #include "./ext/luafilesystem/src/lfs.c"
+#undef LUA_ANSI
+#undef MAKE_LIB
 
 #include "./ext/lua/lua.h"
 #include "./ext/lua/lualib.h"
@@ -64,6 +68,10 @@
 #	define oro_stat stat
 #	define ORO_S_ISREG S_ISREG
 	typedef struct stat oro_stat_t;
+#endif
+
+#ifdef ORB_BUNDLED_SCRIPTS
+#	include ORB_BUNDLED_SCRIPTS
 #endif
 
 static int display_traceback(lua_State *L) {
